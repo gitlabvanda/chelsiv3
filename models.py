@@ -19,7 +19,7 @@ class Endpoint(Base):
     __tablename__ = "endpoints"
     id = Column(Integer, primary_key=True)
     remark = Column(String, nullable=False)
-    kind = Column(String, nullable=False)  # web-http | edge-tcp | edge-http
+    kind = Column(String, nullable=False)  # web-http | web-ws | edge-tcp | edge-http
     mode = Column(String, default="packet-up")
     path = Column(String, default="/s/")
     key_a = Column(String, default="")

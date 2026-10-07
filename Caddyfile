@@ -4,11 +4,38 @@
 }
 
 :{$PORT:8080} {
+	header -Server
+
+	# xhttp traffic. Anything that is NOT a valid xhttp path (404 from the core,
+	# e.g. an active prober hitting /s/whatever) is answered with the normal landing page instead.
 	handle /s/* {
 		reverse_proxy 127.0.0.1:10000 {
 			flush_interval -1
+			header_down -Via
+			@notfound status 404
+			handle_response @notfound {
+				method GET
+				rewrite * /
+				reverse_proxy 127.0.0.1:8000
+			}
 		}
 	}
+
+	# VLESS + WebSocket traffic (Caddy upgrades WebSocket connections automatically).
+	# Wrong path / non-WebSocket requests (404/400 from the core) get the normal landing page.
+	handle /w/* {
+		reverse_proxy 127.0.0.1:10001 {
+			flush_interval -1
+			header_down -Via
+			@bad status 400 404
+			handle_response @bad {
+				method GET
+				rewrite * /
+				reverse_proxy 127.0.0.1:8000
+			}
+		}
+	}
+
 	handle {
 		reverse_proxy 127.0.0.1:8000
 	}

@@ -4,7 +4,8 @@ from models import Endpoint, Account, DailyStat
 
 CORE_BIN = os.getenv("CORE_BIN", "/usr/local/bin/appcore")
 CONF = "/tmp/core.json"
-WEB_PORT = 10000        # internal, reached through Caddy at /s/*
+WEB_PORT = 10000        # internal xhttp, reached through Caddy at /s/*
+WS_PORT = 10001         # internal WebSocket, reached through Caddy at /w/*
 API_PORT = 10085        # internal stats API
 EDGE_PORT = int(os.getenv("EDGE_PORT", "4433"))  # expose via Railway TCP Proxy
 FRONT_HOST = os.getenv("FRONT_HOST", "www.cloudflare.com:443")
@@ -53,6 +54,9 @@ def build_config(db):
             stream = {"network": "xhttp", "security": "none",
                       "xhttpSettings": {"path": ib.path, "mode": ib.mode}}
             listen, port = "127.0.0.1", WEB_PORT
+        elif ib.kind == "web-ws":
+            stream = {"network": "ws", "security": "none", "wsSettings": {"path": ib.path}}
+            listen, port = "127.0.0.1", WS_PORT
         else:
             host = FRONT_HOST.split(":")[0]
             stream = {
@@ -72,13 +76,19 @@ def build_config(db):
             "streamSettings": stream,
         })
     return {
-        "log": {"loglevel": "warning"},
+        "log": {"loglevel": os.getenv("CORE_LOG", "warning")},
         "stats": {},
         "api": {"tag": "api", "services": ["StatsService"]},
         "policy": {"levels": {"0": {"statsUserUplink": True, "statsUserDownlink": True}}},
         "inbounds": inbounds,
         "outbounds": [{"protocol": "freedom", "tag": "direct"}, {"protocol": "blackhole", "tag": "block"}],
-        "routing": {"rules": [{"type": "field", "inboundTag": ["api"], "outboundTag": "api"}]},
+        "routing": {"domainStrategy": "IPIfNonMatch", "rules": [
+            {"type": "field", "inboundTag": ["api"], "outboundTag": "api"},
+            # users must not reach the panel, the stats API or Railway's private network through the proxy
+            {"type": "field", "outboundTag": "block", "ip": [
+                "127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16",
+                "100.64.0.0/10", "::1/128", "fc00::/7", "fe80::/10"]},
+        ]},
     }
 
 

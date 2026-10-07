@@ -4,11 +4,12 @@ from datetime import datetime, timedelta
 from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
-from fastapi.responses import PlainTextResponse, RedirectResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy import text
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
 import models as m
@@ -27,6 +28,14 @@ PANEL_DOMAIN = (os.getenv("PANEL_DOMAIN") or os.getenv("RAILWAY_PUBLIC_DOMAIN") 
 FRONT_HOST = os.getenv("FRONT_HOST", "www.cloudflare.com:443")
 TCP_DOMAIN = os.getenv("TCP_PROXY_DOMAIN", "")   # Railway TCP Proxy domain (for edge mode)
 TCP_PORT = os.getenv("TCP_PROXY_PORT", "")       # Railway TCP Proxy public port
+# --- client-side link options (xhttp behind Cloudflare) ---
+CLIENT_FP = os.getenv("CLIENT_FP", "chrome")      # chrome | firefox | safari | ios | android | edge | randomized
+CLIENT_ALPN = os.getenv("CLIENT_ALPN", "h2")      # xhttp: h2 is safest in Iran (QUIC/UDP is often throttled)
+CLIENT_ALPN_WS = os.getenv("CLIENT_ALPN_WS", "http/1.1")  # WebSocket needs HTTP/1.1 through Cloudflare
+# Comma-separated Cloudflare IPs/domains to connect to. SNI and Host stay = your domain.
+CLIENT_ADDRESS = [a.strip() for a in os.getenv("CLIENT_ADDRESS", "").split(",") if a.strip()]
+# Optional raw JSON for the xhttp "extra" link parameter (xmux, xPaddingBytes, ...)
+XHTTP_EXTRA = os.getenv("XHTTP_EXTRA", "").strip()
 
 
 @asynccontextmanager
@@ -74,13 +83,20 @@ def build_link(c, host):
     name = quote(f"{ib.remark}-{c.name}")
     path = quote(ib.path, safe="")
     if ib.kind == "web-http":
-        q = (f"encryption=none&security=tls&sni={host}&fp=chrome&type=xhttp&host={host}"
-             f"&path={path}&mode={ib.mode}")
-        return f"vless://{c.uuid}@{host}:443?{q}#{name}"
+        q = (f"encryption=none&security=tls&sni={host}&fp={CLIENT_FP}&alpn={quote(CLIENT_ALPN, safe='')}"
+             f"&type=xhttp&host={host}&path={path}&mode={ib.mode}")
+        if XHTTP_EXTRA:
+            q += "&extra=" + quote(XHTTP_EXTRA, safe="")
+        # one link per address (clean Cloudflare IPs); falls back to the domain itself
+        return "\n".join(f"vless://{c.uuid}@{a}:443?{q}#{name}" for a in (CLIENT_ADDRESS or [host]))
+    if ib.kind == "web-ws":
+        q = (f"encryption=none&security=tls&sni={host}&fp={CLIENT_FP}&alpn={quote(CLIENT_ALPN_WS, safe='')}"
+             f"&type=ws&host={host}&path={path}")
+        return "\n".join(f"vless://{c.uuid}@{a}:443?{q}#{name}" for a in (CLIENT_ADDRESS or [host]))
     sni = FRONT_HOST.split(":")[0]
     addr = TCP_DOMAIN or host
     port = TCP_PORT or eng.EDGE_PORT
-    q = f"encryption=none&security=reality&sni={sni}&fp=chrome&pbk={ib.key_b}&sid={ib.tag_id}"
+    q = f"encryption=none&security=reality&sni={sni}&fp={CLIENT_FP}&pbk={ib.key_b}&sid={ib.tag_id}"
     if ib.kind == "edge-tcp":
         q += "&type=tcp&flow=xtls-rprx-vision"
     else:
@@ -89,6 +105,14 @@ def build_link(c, host):
 
 
 # ---------- pages ----------
+@app.exception_handler(StarletteHTTPException)
+async def http_exc(request: Request, exc: StarletteHTTPException):
+    # unknown pages look like the public site, not like a JSON API
+    if exc.status_code == 404 and not request.url.path.startswith("/api/"):
+        return templates.TemplateResponse(request, "landing.html", {}, status_code=404)
+    return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+
+
 @app.get("/")
 def landing(request: Request):
     return templates.TemplateResponse(request, "landing.html", {})
@@ -138,16 +162,21 @@ def list_endpoints(db=Depends(get_db)):
 
 @app.post("/api/endpoints", dependencies=[Depends(auth)])
 def add_endpoint(data: EndpointIn, db=Depends(get_db)):
-    if data.kind not in ("web-http", "edge-tcp", "edge-http"):
+    if data.kind not in ("web-http", "web-ws", "edge-tcp", "edge-http"):
         raise HTTPException(400, "invalid kind")
     if data.mode not in ("packet-up", "stream-up", "stream-one"):
         raise HTTPException(400, "invalid mode")
     is_edge = data.kind.startswith("edge")
     for i in db.query(m.Endpoint).all():
-        if i.kind.startswith("edge") == is_edge:
-            raise HTTPException(400, "only one endpoint of this family is supported (one port each)")
-    ib = m.Endpoint(remark=data.remark.strip() or "endpoint", kind=data.kind, mode=data.mode,
-                   path="/s/" + secrets.token_hex(6) + "/")
+        # edge kinds share one port (one of them); each web kind has its own internal port
+        if (is_edge and i.kind.startswith("edge")) or i.kind == data.kind:
+            raise HTTPException(400, "only one endpoint of this kind is supported (one port each)")
+    if data.kind == "web-ws":
+        ib = m.Endpoint(remark=data.remark.strip() or "endpoint", kind=data.kind, mode="ws",
+                        path="/w/" + secrets.token_hex(6))   # exact path, no trailing slash
+    else:
+        ib = m.Endpoint(remark=data.remark.strip() or "endpoint", kind=data.kind, mode=data.mode,
+                        path="/s/" + secrets.token_hex(6) + "/")
     if is_edge:
         ib.key_a, ib.key_b = eng.gen_keys()
         ib.tag_id = secrets.token_hex(8)
