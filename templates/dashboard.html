@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>داشبورد</title><link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<header><h1>پنل مدیریت</h1><button class="ghost" onclick="logout()">خروج</button></header>
+<main>
+<div class="tiles" id="tiles"></div>
+<section class="card wide"><h2>مصرف ۱۴ روز اخیر</h2><svg id="chart" viewBox="0 0 700 170" preserveAspectRatio="none"></svg>
+  <div class="muted"><span style="color:#4f6bed">■</span> دانلود &nbsp; <span style="color:#1aa36f">■</span> آپلود &nbsp; (UTC)</div></section>
+<section class="card wide"><h2>نقاط اتصال</h2>
+  <div class="row">
+    <input id="ep-remark" placeholder="نام">
+    <select id="ep-kind">
+      <option value="web-http">حالت وب (روی دامنه Railway)</option>
+      <option value="edge-tcp">حالت مستقیم A (نیاز به TCP Proxy)</option>
+      <option value="edge-http">حالت مستقیم B (نیاز به TCP Proxy)</option>
+    </select>
+    <select id="ep-mode"><option>packet-up</option><option>stream-up</option><option>stream-one</option></select>
+    <button onclick="addEndpoint()">افزودن</button>
+  </div>
+  <div class="scroll"><table id="eps"></table></div>
+</section>
+<section class="card wide"><h2>کاربران</h2>
+  <div class="row">
+    <input id="c-name" placeholder="نام کاربر">
+    <select id="c-ep"></select>
+    <input id="c-gb" type="number" min="0" step="any" placeholder="حجم GB (۰=نامحدود)">
+    <input id="c-days" type="number" min="0" placeholder="روز (۰=نامحدود)">
+    <button onclick="addAccount()">افزودن</button>
+  </div>
+  <div class="scroll"><table id="cls"></table></div>
+</section>
+</main>
+<script>
+const BASE='{{ base }}';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(p,method='GET',body){
+  const r=await fetch('/api'+p,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  if(r.status===401){location=BASE;return null}
+  if(!r.ok){const j=await r.json().catch(()=>({}));alert(j.detail||'خطا');return null}
+  return r.json();
+}
+const fmt=b=>{b=+b||0;const u=['B','KB','MB','GB','TB'];let i=0;while(b>=1024&&i<4){b/=1024;i++}return b.toFixed(i?2:0)+' '+u[i]};
+function chart(days){
+  const el=$('#chart');if(!days.length){el.innerHTML='<text x="350" y="90" text-anchor="middle" fill="#8b96b0">هنوز داده‌ای ثبت نشده</text>';return}
+  const max=Math.max(1,...days.map(d=>d.up+d.down)),w=700/days.length;let h='';
+  days.forEach((d,i)=>{const x=i*w+w*.15,bw=w*.7,hd=d.down/max*140,hu=d.up/max*140;
+    h+=`<rect x="${x}" y="${150-hd}" width="${bw}" height="${hd}" fill="#4f6bed" rx="3"/><rect x="${x}" y="${150-hd-hu}" width="${bw}" height="${hu}" fill="#1aa36f" rx="3"/>
+    <text x="${x+bw/2}" y="166" font-size="10" text-anchor="middle" fill="#8b96b0">${esc(d.day.slice(5))}</text>
+    <title>${esc(d.day)}: ↓${fmt(d.down)} ↑${fmt(d.up)}</title>`});
+  el.innerHTML=h;
+}
+async function load(){
+  const st=await api('/stats');
+  if(st){$('#tiles').innerHTML=[['کاربران',st.accounts],['فعال',st.active],['دانلود',fmt(st.down)],['آپلود',fmt(st.up)],['مجموع',fmt(st.up+st.down)]]
+    .map(t=>`<div class="tile"><small>${t[0]}</small><b>${t[1]}</b></div>`).join('');chart(st.days)}
+  const eps=(await api('/endpoints'))||[];
+  $('#eps').innerHTML='<tr><th>#</th><th>نام</th><th>نوع</th><th>حالت</th><th>کاربر</th><th></th></tr>'+
+    eps.map(i=>`<tr><td>${i.id}</td><td>${esc(i.remark)}</td><td>${esc(i.kind)}</td><td>${esc(i.mode)}</td><td>${i.accounts}</td><td><button class="danger" onclick="delEp(${i.id})">حذف</button></td></tr>`).join('');
+  $('#c-ep').innerHTML=eps.map(i=>`<option value="${i.id}">${esc(i.remark)}</option>`).join('');
+  const cls=(await api('/accounts'))||[];
+  $('#cls').innerHTML='<tr><th>نام</th><th>نقطه اتصال</th><th>مصرف</th><th>↓ / ↑</th><th>انقضا</th><th>وضعیت</th><th></th></tr>'+
+    cls.map(c=>{const p=c.total?Math.min(100,c.used*100/c.total):0,k=p>=90?'d':p>=70?'w':'';
+    return `<tr><td>${esc(c.name)}</td><td>${esc(c.endpoint)}</td>
+    <td>${fmt(c.used)} / ${c.total?fmt(c.total):'∞'}${c.total?`<div class="bar ${k}"><div style="width:${p}%"></div></div>`:''}</td>
+    <td>${fmt(c.down)} / ${fmt(c.up)}</td><td>${esc(c.expiry||'∞')}</td>
+    <td><span class="badge ${c.active?'b-ok':'b-er'}">${c.active?'فعال':'غیرفعال'}</span></td>
+    <td class="acts"><button onclick="copySub('${esc(c.token)}')">لینک</button>
+    <button class="ghost" onclick="tog(${c.id})">${c.enable?'توقف':'فعال‌سازی'}</button>
+    <button class="ghost" onclick="renew(${c.id})">تمدید</button>
+    <button class="ghost" onclick="rst(${c.id})">ریست</button>
+    <button class="danger" onclick="delAcc(${c.id})">حذف</button></td></tr>`}).join('');
+}
+async function addEndpoint(){if(await api('/endpoints','POST',{remark:$('#ep-remark').value,kind:$('#ep-kind').value,mode:$('#ep-mode').value}))load()}
+async function delEp(id){if(confirm('حذف نقطه اتصال و همه کاربرانش؟')&&await api('/endpoints/'+id,'DELETE'))load()}
+async function addAccount(){
+  if(await api('/accounts','POST',{endpoint_id:+$('#c-ep').value,name:$('#c-name').value,gb:+$('#c-gb').value||0,days:+$('#c-days').value||0}))load()}
+async function tog(id){if(await api('/accounts/'+id+'/toggle','POST'))load()}
+async function rst(id){if(await api('/accounts/'+id+'/reset','POST'))load()}
+async function renew(id){const g=prompt('حجم جدید (GB، ۰=نامحدود):','0');if(g===null)return;const d=prompt('تعداد روز (۰=نامحدود):','30');if(d===null)return;
+  if(await api('/accounts/'+id+'/renew','POST',{gb:+g||0,days:+d||0}))load()}
+async function delAcc(id){if(confirm('حذف کاربر؟')&&await api('/accounts/'+id,'DELETE'))load()}
+function copySub(t){const u=location.origin+'/sub/'+t;navigator.clipboard.writeText(u).then(()=>alert('کپی شد:\n'+u))}
+async function logout(){await api('/logout','POST');location=BASE}
+load();setInterval(load,30000);
+</script></body></html>
