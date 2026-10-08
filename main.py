@@ -41,7 +41,7 @@ XHTTP_EXTRA = os.getenv("XHTTP_EXTRA", "").strip()
 @asynccontextmanager
 async def lifespan(app):
     m.Base.metadata.create_all(m.engine)
-    for col in ("up_bytes", "down_bytes"):  # add new columns to an existing database
+    for col in ("up_bytes", "down_bytes", "limit_down_kbps", "limit_up_kbps"):  # add new columns to an existing database
         try:
             with m.engine.begin() as cx:
                 cx.execute(text(f"ALTER TABLE clients ADD COLUMN {col} BIGINT DEFAULT 0"))
@@ -203,13 +203,22 @@ class AccountIn(BaseModel):
     name: str
     gb: float = 0      # 0 = unlimited
     days: int = 0      # 0 = never expires
+    down_mbps: float = 0   # speed limit, megabit/s, 0 = unlimited
+    up_mbps: float = 0
+
+
+def to_kbps(mbps):
+    if mbps < 0 or mbps > 10000:
+        raise HTTPException(400, "speed must be between 0 and 10000 Mbps")
+    return max(1, int(round(mbps * 1000))) if mbps > 0 else 0
 
 
 @app.get("/api/accounts", dependencies=[Depends(auth)])
 def list_clients(db=Depends(get_db)):
     return [{"id": c.id, "name": c.name, "endpoint": c.endpoint.remark, "used": c.used_bytes or 0, "up": c.up_bytes or 0, "down": c.down_bytes or 0,
              "total": c.total_bytes or 0, "expiry": c.expiry.strftime("%Y-%m-%d") if c.expiry else "",
-             "enable": c.enable, "active": eng.is_active(c), "token": c.sub_token}
+             "enable": c.enable, "active": eng.is_active(c), "token": c.sub_token,
+             "limit_down": c.limit_down_kbps or 0, "limit_up": c.limit_up_kbps or 0}
             for c in db.query(m.Account).all()]
 
 
@@ -220,11 +229,28 @@ def add_client(data: AccountIn, db=Depends(get_db)):
     c = m.Account(endpoint_id=data.endpoint_id, name=data.name.strip() or "user",
                  uuid=str(uuidlib.uuid4()), sub_token=secrets.token_urlsafe(16),
                  total_bytes=int(data.gb * 1024 ** 3),
+                 limit_down_kbps=to_kbps(data.down_mbps), limit_up_kbps=to_kbps(data.up_mbps),
                  expiry=datetime.utcnow() + timedelta(days=data.days) if data.days else None)
     db.add(c)
     db.commit()
     eng.restart(db)
     return {"id": c.id}
+
+
+class LimitIn(BaseModel):
+    down_mbps: float = 0
+    up_mbps: float = 0
+
+
+@app.post("/api/accounts/{cid}/limit", dependencies=[Depends(auth)])
+def set_limit(cid: int, data: LimitIn, db=Depends(get_db)):
+    c = db.get(m.Account, cid)
+    if not c:
+        raise HTTPException(404, "not found")
+    c.limit_down_kbps, c.limit_up_kbps = to_kbps(data.down_mbps), to_kbps(data.up_mbps)
+    db.commit()
+    eng.restart(db)
+    return {"down": c.limit_down_kbps, "up": c.limit_up_kbps}
 
 
 @app.post("/api/accounts/{cid}/toggle", dependencies=[Depends(auth)])

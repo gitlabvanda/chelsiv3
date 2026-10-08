@@ -40,6 +40,8 @@ class Account(Base):
     used_bytes = Column(BigInteger, default=0)
     up_bytes = Column(BigInteger, default=0)
     down_bytes = Column(BigInteger, default=0)
+    limit_down_kbps = Column(BigInteger, default=0)  # 0 = unlimited
+    limit_up_kbps = Column(BigInteger, default=0)    # 0 = unlimited
     expiry = Column(DateTime, nullable=True)  # UTC, None = never
     enable = Column(Boolean, default=True)
     created = Column(DateTime, default=datetime.utcnow)

@@ -1,4 +1,4 @@
-import json, os, subprocess, threading
+import json, os, subprocess, sys, threading
 from datetime import datetime
 from models import Endpoint, Account, DailyStat
 
@@ -9,8 +9,12 @@ WS_PORT = 10001         # internal WebSocket, reached through Caddy at /w/*
 API_PORT = 10085        # internal stats API
 EDGE_PORT = int(os.getenv("EDGE_PORT", "4433"))  # expose via Railway TCP Proxy
 FRONT_HOST = os.getenv("FRONT_HOST", "www.cloudflare.com:443")
+LIMITS = "/tmp/limits.json"
+LIM_BASE = int(os.getenv("LIMIT_PORT_BASE", "20000"))   # local relay ports for speed-limited users
+THROTTLE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "throttle.py")
 
 _proc = None
+_tproc = None
 _lock = threading.Lock()
 _stop = threading.Event()
 _active_ids = set()
@@ -34,6 +38,8 @@ def is_active(c):
 
 
 def build_config(db):
+    """Return (core config, speed-limit relays)."""
+    limited = []  # active users that have a speed limit
     inbounds = [{
         "tag": "api", "listen": "127.0.0.1", "port": API_PORT, "protocol": "dokodemo-door",
         "settings": {"address": "127.0.0.1"},
@@ -47,6 +53,8 @@ def build_config(db):
                 if flow:
                     cl["flow"] = flow
                 clients.append(cl)
+                if (c.limit_down_kbps or 0) or (c.limit_up_kbps or 0):
+                    limited.append(c)
         if not clients:
             continue
         stream = {}
@@ -75,36 +83,64 @@ def build_config(db):
             "settings": {"clients": clients, "decryption": "none"},
             "streamSettings": stream,
         })
-    return {
-        "log": {"loglevel": os.getenv("CORE_LOG", "warning")},
+    outbounds = [{"protocol": "freedom", "tag": "direct"}, {"protocol": "blackhole", "tag": "block"}]
+    rules = [
+        {"type": "field", "inboundTag": ["api"], "outboundTag": "api"},
+        # users must not reach the panel, the stats API or Railway's private network through the proxy
+        {"type": "field", "outboundTag": "block", "ip": [
+            "127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16",
+            "100.64.0.0/10", "::1/128", "fc00::/7", "fe80::/10"]},
+    ]
+    relays = []
+    for i, c in enumerate(limited):
+        port = LIM_BASE + i
+        relays.append({"port": port, "down_kbps": int(c.limit_down_kbps or 0), "up_kbps": int(c.limit_up_kbps or 0)})
+        outbounds.append({"protocol": "socks", "tag": f"lim{c.id}",
+                          "settings": {"servers": [{"address": "127.0.0.1", "port": port}]}})
+        u = f"u{c.id}"
+        rules += [
+            {"type": "field", "user": [u], "network": "udp", "port": "53", "outboundTag": "direct"},
+            # other UDP (QUIC, ...) cannot be throttled by the relay: block it so apps fall back to TCP
+            {"type": "field", "user": [u], "network": "udp", "outboundTag": "block"},
+            {"type": "field", "user": [u], "network": "tcp", "outboundTag": f"lim{c.id}"},
+        ]
+    cfg = {
+        # no per-connection access log by default: it would record every user's destinations
+        "log": {"loglevel": os.getenv("CORE_LOG", "warning"),
+                "access": "" if os.getenv("CORE_ACCESS_LOG") == "1" else "none"},
         "stats": {},
         "api": {"tag": "api", "services": ["StatsService"]},
         "policy": {"levels": {"0": {"statsUserUplink": True, "statsUserDownlink": True}}},
         "inbounds": inbounds,
-        "outbounds": [{"protocol": "freedom", "tag": "direct"}, {"protocol": "blackhole", "tag": "block"}],
-        "routing": {"domainStrategy": "IPIfNonMatch", "rules": [
-            {"type": "field", "inboundTag": ["api"], "outboundTag": "api"},
-            # users must not reach the panel, the stats API or Railway's private network through the proxy
-            {"type": "field", "outboundTag": "block", "ip": [
-                "127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16",
-                "100.64.0.0/10", "::1/128", "fc00::/7", "fe80::/10"]},
-        ]},
+        "outbounds": outbounds,
+        "routing": {"domainStrategy": "IPIfNonMatch", "rules": rules},
     }
+    return cfg, relays
+
+
+def _kill(p):
+    if p and p.poll() is None:
+        p.terminate()
+        try:
+            p.wait(5)
+        except subprocess.TimeoutExpired:
+            p.kill()
 
 
 def restart(db):
-    global _proc, _active_ids
+    global _proc, _tproc, _active_ids
     with _lock:
-        cfg = build_config(db)
+        cfg, relays = build_config(db)
         _active_ids = {c.id for c in db.query(Account).all() if is_active(c)}
         with open(CONF, "w") as f:
             json.dump(cfg, f)
-        if _proc and _proc.poll() is None:
-            _proc.terminate()
-            try:
-                _proc.wait(5)
-            except subprocess.TimeoutExpired:
-                _proc.kill()
+        _kill(_proc)
+        _kill(_tproc)
+        _tproc = None
+        if relays:  # speed-limit relays must be listening before the core starts using them
+            with open(LIMITS, "w") as f:
+                json.dump(relays, f)
+            _tproc = subprocess.Popen([sys.executable, THROTTLE, LIMITS])
         _proc = subprocess.Popen([CORE_BIN, "run", "-c", CONF])
 
 
@@ -153,5 +189,7 @@ def start_poller(SessionLocal):
 
 def stop():
     _stop.set()
+    if _tproc and _tproc.poll() is None:
+        _tproc.terminate()
     if _proc and _proc.poll() is None:
         _proc.terminate()

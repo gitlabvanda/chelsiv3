@@ -28,6 +28,8 @@
     <select id="c-ep"></select>
     <input id="c-gb" type="number" min="0" step="any" placeholder="حجم GB (۰=نامحدود)">
     <input id="c-days" type="number" min="0" placeholder="روز (۰=نامحدود)">
+    <input id="c-down" type="number" min="0" step="any" placeholder="سرعت دانلود Mbps (۰=نامحدود)">
+    <input id="c-up" type="number" min="0" step="any" placeholder="سرعت آپلود Mbps (۰=نامحدود)">
     <button onclick="addAccount()">افزودن</button>
   </div>
   <div class="scroll"><table id="cls"></table></div>
@@ -43,6 +45,7 @@ async function api(p,method='GET',body){
   if(!r.ok){const j=await r.json().catch(()=>({}));alert(j.detail||'خطا');return null}
   return r.json();
 }
+const mb=k=>k?(k/1000).toFixed(k%1000?2:0):'∞';
 const fmt=b=>{b=+b||0;const u=['B','KB','MB','GB','TB'];let i=0;while(b>=1024&&i<4){b/=1024;i++}return b.toFixed(i?2:0)+' '+u[i]};
 function chart(days){
   const el=$('#chart');if(!days.length){el.innerHTML='<text x="350" y="90" text-anchor="middle" fill="#8b96b0">هنوز داده‌ای ثبت نشده</text>';return}
@@ -62,26 +65,29 @@ async function load(){
     eps.map(i=>`<tr><td>${i.id}</td><td>${esc(i.remark)}</td><td>${esc(i.kind)}</td><td>${esc(i.mode)}</td><td>${i.accounts}</td><td><button class="danger" onclick="delEp(${i.id})">حذف</button></td></tr>`).join('');
   $('#c-ep').innerHTML=eps.map(i=>`<option value="${i.id}">${esc(i.remark)}</option>`).join('');
   const cls=(await api('/accounts'))||[];
-  $('#cls').innerHTML='<tr><th>نام</th><th>نقطه اتصال</th><th>مصرف</th><th>↓ / ↑</th><th>انقضا</th><th>وضعیت</th><th></th></tr>'+
+  $('#cls').innerHTML='<tr><th>نام</th><th>نقطه اتصال</th><th>مصرف</th><th>↓ / ↑</th><th>سرعت ↓ / ↑ (Mbps)</th><th>انقضا</th><th>وضعیت</th><th></th></tr>'+
     cls.map(c=>{const p=c.total?Math.min(100,c.used*100/c.total):0,k=p>=90?'d':p>=70?'w':'';
     return `<tr><td>${esc(c.name)}</td><td>${esc(c.endpoint)}</td>
     <td>${fmt(c.used)} / ${c.total?fmt(c.total):'∞'}${c.total?`<div class="bar ${k}"><div style="width:${p}%"></div></div>`:''}</td>
-    <td>${fmt(c.down)} / ${fmt(c.up)}</td><td>${esc(c.expiry||'∞')}</td>
+    <td>${fmt(c.down)} / ${fmt(c.up)}</td><td>${mb(c.limit_down)} / ${mb(c.limit_up)}</td><td>${esc(c.expiry||'∞')}</td>
     <td><span class="badge ${c.active?'b-ok':'b-er'}">${c.active?'فعال':'غیرفعال'}</span></td>
     <td class="acts"><button onclick="copySub('${esc(c.token)}')">لینک</button>
     <button class="ghost" onclick="tog(${c.id})">${c.enable?'توقف':'فعال‌سازی'}</button>
     <button class="ghost" onclick="renew(${c.id})">تمدید</button>
+    <button class="ghost" onclick="lim(${c.id},${c.limit_down},${c.limit_up})">سرعت</button>
     <button class="ghost" onclick="rst(${c.id})">ریست</button>
     <button class="danger" onclick="delAcc(${c.id})">حذف</button></td></tr>`}).join('');
 }
 async function addEndpoint(){if(await api('/endpoints','POST',{remark:$('#ep-remark').value,kind:$('#ep-kind').value,mode:$('#ep-mode').value}))load()}
 async function delEp(id){if(confirm('حذف نقطه اتصال و همه کاربرانش؟')&&await api('/endpoints/'+id,'DELETE'))load()}
 async function addAccount(){
-  if(await api('/accounts','POST',{endpoint_id:+$('#c-ep').value,name:$('#c-name').value,gb:+$('#c-gb').value||0,days:+$('#c-days').value||0}))load()}
+  if(await api('/accounts','POST',{endpoint_id:+$('#c-ep').value,name:$('#c-name').value,gb:+$('#c-gb').value||0,days:+$('#c-days').value||0,down_mbps:+$('#c-down').value||0,up_mbps:+$('#c-up').value||0}))load()}
 async function tog(id){if(await api('/accounts/'+id+'/toggle','POST'))load()}
 async function rst(id){if(await api('/accounts/'+id+'/reset','POST'))load()}
 async function renew(id){const g=prompt('حجم جدید (GB، ۰=نامحدود):','0');if(g===null)return;const d=prompt('تعداد روز (۰=نامحدود):','30');if(d===null)return;
   if(await api('/accounts/'+id+'/renew','POST',{gb:+g||0,days:+d||0}))load()}
+async function lim(id,d,u){const a=prompt('سرعت دانلود (Mbps، ۰=نامحدود):',d?d/1000:'0');if(a===null)return;const b=prompt('سرعت آپلود (Mbps، ۰=نامحدود):',u?u/1000:'0');if(b===null)return;
+  if(await api('/accounts/'+id+'/limit','POST',{down_mbps:+a||0,up_mbps:+b||0}))load()}
 async function delAcc(id){if(confirm('حذف کاربر؟')&&await api('/accounts/'+id,'DELETE'))load()}
 function copySub(t){const u=location.origin+'/sub/'+t;navigator.clipboard.writeText(u).then(()=>alert('کپی شد:\n'+u))}
 async function logout(){await api('/logout','POST');location=BASE}
