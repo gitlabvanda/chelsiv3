@@ -1,95 +1,262 @@
 <!doctype html>
 <html lang="fa" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>داشبورد</title><link rel="stylesheet" href="/static/style.css"></head>
+<meta name="robots" content="noindex,nofollow">
+<title>پنل مدیریت</title><link rel="stylesheet" href="/static/style.css">
+<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script></head>
 <body>
-<header><h1>پنل مدیریت</h1><button class="ghost" onclick="logout()">خروج</button></header>
+<svg width="0" height="0" style="position:absolute"><defs>
+ <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+ <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></symbol>
+ <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+ <symbol id="i-sum" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+ <symbol id="i-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+ <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6l8-3z"/></symbol>
+</defs></svg>
+
+<header class="top">
+ <div class="brand"><div class="logo"><svg class="i"><use href="#i-shield"/></svg></div>پنل مدیریت</div>
+ <nav class="tabs" id="tabs">
+  <button class="on" data-tab="overview">نمای کلی</button>
+  <button data-tab="users">کاربران</button>
+  <button data-tab="endpoints">نقاط اتصال</button>
+  <button data-tab="settings">تنظیمات</button>
+ </nav>
+ <div class="sp"></div>
+ <button class="ghost sm" id="theme" title="تغییر تم"><svg class="i"><use href="#i-sun"/></svg></button>
+ <button class="ghost sm" onclick="logout()"><svg class="i"><use href="#i-out"/></svg>خروج</button>
+</header>
+
 <main>
-<div class="tiles" id="tiles"></div>
-<section class="card wide"><h2>مصرف ۱۴ روز اخیر</h2><svg id="chart" viewBox="0 0 700 170" preserveAspectRatio="none"></svg>
-  <div class="muted"><span style="color:#4f6bed">■</span> دانلود &nbsp; <span style="color:#1aa36f">■</span> آپلود &nbsp; (UTC)</div></section>
-<section class="card wide"><h2>نقاط اتصال</h2>
-  <div class="row">
-    <input id="ep-remark" placeholder="نام">
-    <select id="ep-kind">
-      <option value="web-http">حالت وب xhttp (روی دامنه)</option>
-      <option value="web-ws">حالت وب WebSocket + TLS (روی دامنه)</option>
-      <option value="edge-tcp">حالت مستقیم A (نیاز به TCP Proxy)</option>
-      <option value="edge-http">حالت مستقیم B (نیاز به TCP Proxy)</option>
-    </select>
-    <select id="ep-mode"><option>packet-up</option><option>stream-up</option><option>stream-one</option></select>
-    <button onclick="addEndpoint()">افزودن</button>
+ <section id="tab-overview">
+  <div class="tiles" id="tiles"></div>
+  <div class="card"><h2>مصرف ۱۴ روز اخیر</h2><p class="sub">به وقت UTC</p>
+   <svg id="chart" viewBox="0 0 700 190" preserveAspectRatio="none"></svg>
+   <div class="legend"><span><i style="background:var(--pr)"></i>دانلود</span><span><i style="background:var(--ok)"></i>آپلود</span></div></div>
+ </section>
+
+ <section id="tab-users" hidden>
+  <div class="card">
+   <div class="toolbar"><input class="search" id="q" placeholder="جستجوی کاربر…"><div class="sp"></div>
+    <button onclick="openUser()"><svg class="i"><use href="#i-plus"/></svg>کاربر جدید</button></div>
+   <div class="scroll"><table class="cards" id="cls"></table></div>
   </div>
-  <div class="scroll"><table id="eps"></table></div>
-</section>
-<section class="card wide"><h2>کاربران</h2>
-  <div class="row">
-    <input id="c-name" placeholder="نام کاربر">
-    <select id="c-ep"></select>
-    <input id="c-gb" type="number" min="0" step="any" placeholder="حجم GB (۰=نامحدود)">
-    <input id="c-days" type="number" min="0" placeholder="روز (۰=نامحدود)">
-    <input id="c-down" type="number" min="0" step="any" placeholder="سرعت دانلود Mbps (۰=نامحدود)">
-    <input id="c-up" type="number" min="0" step="any" placeholder="سرعت آپلود Mbps (۰=نامحدود)">
-    <button onclick="addAccount()">افزودن</button>
+ </section>
+
+ <section id="tab-endpoints" hidden>
+  <div class="card"><div class="toolbar"><div><h2>نقاط اتصال</h2><p class="sub" style="margin:0">از هر نوع فقط یکی ساخته می‌شود.</p></div><div class="sp"></div>
+   <button onclick="$('#dlg-ep').showModal()"><svg class="i"><use href="#i-plus"/></svg>نقطه اتصال جدید</button></div>
+   <div class="eps" id="eps"></div></div>
+ </section>
+
+ <section id="tab-settings" hidden>
+  <div class="card"><h2>دامنه و آدرس اتصال</h2>
+   <p class="sub">با تغییر این بخش لینک‌ها بلافاصله عوض می‌شوند و نیازی به دپلوی دوباره نیست.</p>
+   <label for="s-domains">دامنه‌ها</label>
+   <textarea id="s-domains" class="ltr" rows="3" placeholder="sub.example.com"></textarea>
+   <p class="hint">هر دامنه در یک خط یا با کاما جدا شود. برای هر دامنه یک لینک ساخته می‌شود؛ اولی دامنهٔ اصلی است. دامنه‌ای که پاک کرده‌اید را از اینجا هم حذف کنید.</p>
+   <div class="chips" id="eff"></div>
+   <div class="warnbox" id="dns" hidden></div>
+   <label for="s-addr">آدرس‌های اتصال (IP تمیز Cloudflare)، اختیاری</label>
+   <textarea id="s-addr" class="ltr" rows="2" placeholder="104.16.1.1, 104.17.2.2"></textarea>
+   <p class="hint">خالی بگذارید تا کلاینت مستقیماً به خود دامنه وصل شود. SNI و Host همیشه دامنه است.</p>
   </div>
-  <div class="scroll"><table id="cls"></table></div>
-</section>
+
+  <div class="card"><h2>اثرانگشت TLS و پروتکل</h2>
+   <div class="grid2">
+    <div><label for="s-fp">اثرانگشت کلاینت (fp)</label><select id="s-fp"></select></div>
+    <div><label for="s-alpn">ALPN برای xhttp</label><select id="s-alpn"></select></div>
+    <div><label for="s-alpnws">ALPN برای WebSocket</label><select id="s-alpnws"></select></div>
+    <div><label for="s-pad">طول padding در xhttp (بایت)</label><input id="s-pad" class="ltr" placeholder="100-1000"></div>
+   </div>
+  </div>
+
+  <div class="card"><h2>پنهان‌سازی SNI (Fragment)</h2>
+   <p class="sub">در «کانفیگ کامل JSON» صفحهٔ اشتراک هر کاربر، ClientHello در TLS به تکه‌های کوچک شکسته می‌شود تا DPI نتواند نام دامنه را در یک بستهٔ واحد ببیند. این تنظیم فقط روی آن کانفیگ JSON اثر دارد و سمت کلاینت اعمال می‌شود؛ لینک‌های vless:// را تغییر نمی‌دهد.</p>
+   <div class="switch"><input type="checkbox" id="s-frag"><div><b>Fragment در کانفیگ JSON</b><span>اگر اتصال کند یا ناپایدار شد، خاموشش کنید یا مقدارها را تغییر دهید.</span></div></div>
+   <div class="grid2">
+    <div><label for="s-flen">طول هر تکه (بایت)</label><input id="s-flen" class="ltr" placeholder="100-200"></div>
+    <div><label for="s-fint">فاصله بین تکه‌ها (میلی‌ثانیه)</label><input id="s-fint" class="ltr" placeholder="10-20"></div>
+   </div>
+  </div>
+
+  <div class="card" id="front-card" hidden><h2>مقصد Reality</h2>
+   <p class="sub">سرور از همین‌جا به مقصد Reality وصل می‌شود و بررسی می‌کند TLS 1.3 و HTTP/2 دارد یا نه (Reality به هر دو نیاز دارد).</p>
+   <div id="front-res"></div>
+  </div>
+
+  <div class="card"><h2>ضد شناسایی (پیشرفته)</h2>
+   <p class="sub">این گزینه‌ها سمت سرور و کلاینت باید یکی باشند. بعد از تغییر، همهٔ کاربران باید اشتراک را به‌روز کنند و کلاینت‌های قدیمی وصل نمی‌شوند.</p>
+   <div class="switch"><input type="checkbox" id="s-obfs"><div><b>مبهم‌سازی padding در xhttp</b><span>الگوی طول و جای padding را کمتر ثابت و قابل‌تشخیص می‌کند. کلاینت باید نسخهٔ جدید Xray (حدوداً ۲۶ به بعد) داشته باشد.</span></div></div>
+   <div class="switch"><input type="checkbox" id="s-enc"><div><b>VLESS Encryption (رمزنگاری سرتاسری)</b><span>محتوای VLESS و مقصد اتصال را حتی از Cloudflare و Railway پنهان می‌کند. فقط کلاینت‌هایی که پشتیبانی می‌کنند وصل می‌شوند.</span>
+     <div id="enc-act" hidden style="margin-top:8px"><button class="ghost sm" onclick="regen()">ساخت دوبارهٔ کلیدها</button></div></div></div>
+  </div>
+  <div class="toolbar"><button id="s-save" onclick="saveSettings()">ذخیره تنظیمات</button></div>
+ </section>
 </main>
+
+<dialog id="dlg-user"><h2>کاربر جدید</h2>
+ <label for="c-name">نام</label><input id="c-name">
+ <label for="c-ep">نقطه اتصال</label><select id="c-ep"></select>
+ <div class="grid2"><div><label for="c-gb">حجم (GB)</label><input id="c-gb" type="number" min="0" step="any" placeholder="۰ = نامحدود"></div>
+  <div><label for="c-days">مدت (روز)</label><input id="c-days" type="number" min="0" placeholder="۰ = نامحدود"></div>
+  <div><label for="c-down">سرعت دانلود (Mbps)</label><input id="c-down" type="number" min="0" step="any" placeholder="۰ = نامحدود"></div>
+  <div><label for="c-up">سرعت آپلود (Mbps)</label><input id="c-up" type="number" min="0" step="any" placeholder="۰ = نامحدود"></div></div>
+ <div class="dlg-actions"><button class="ghost" onclick="this.closest('dialog').close()">انصراف</button><button onclick="addAccount()">ساخت کاربر</button></div></dialog>
+
+<dialog id="dlg-ep"><h2>نقطه اتصال جدید</h2>
+ <label for="ep-remark">نام</label><input id="ep-remark">
+ <label for="ep-kind">نوع</label><select id="ep-kind">
+  <option value="web-http">xhttp روی دامنه (پیشنهادی)</option>
+  <option value="web-ws">WebSocket + TLS روی دامنه</option>
+  <option value="edge-tcp">حالت مستقیم A (نیاز به TCP Proxy)</option>
+  <option value="edge-http">حالت مستقیم B (نیاز به TCP Proxy)</option></select>
+ <label for="ep-mode">حالت xhttp</label><select id="ep-mode"><option>packet-up</option><option>stream-up</option><option>stream-one</option></select>
+ <p class="hint">با Cloudflare بهتر است packet-up بماند.</p>
+ <div class="dlg-actions"><button class="ghost" onclick="this.closest('dialog').close()">انصراف</button><button onclick="addEndpoint()">افزودن</button></div></dialog>
+
+<dialog id="dlg-limit"><h2>سرعت کاربر</h2><p class="sub" id="lim-who"></p>
+ <div class="grid2"><div><label for="l-down">دانلود (Mbps)</label><input id="l-down" type="number" min="0" step="any"></div>
+  <div><label for="l-up">آپلود (Mbps)</label><input id="l-up" type="number" min="0" step="any"></div></div>
+ <p class="hint">۰ یعنی نامحدود. با تغییر، هسته چند ثانیه ری‌استارت می‌شود.</p>
+ <div class="dlg-actions"><button class="ghost" onclick="this.closest('dialog').close()">انصراف</button><button onclick="saveLimit()">ذخیره</button></div></dialog>
+
+<dialog id="dlg-renew"><h2>تمدید کاربر</h2><p class="sub" id="rn-who"></p>
+ <div class="grid2"><div><label for="r-gb">حجم جدید (GB)</label><input id="r-gb" type="number" min="0" step="any"></div>
+  <div><label for="r-days">مدت (روز)</label><input id="r-days" type="number" min="0"></div></div>
+ <p class="hint">مصرف صفر و کاربر دوباره فعال می‌شود. ۰ یعنی نامحدود.</p>
+ <div class="dlg-actions"><button class="ghost" onclick="this.closest('dialog').close()">انصراف</button><button onclick="saveRenew()">تمدید</button></div></dialog>
+
+<dialog id="dlg-ok"><h2 id="ok-t"></h2><p class="sub" id="ok-m"></p>
+ <div class="dlg-actions"><button class="ghost" onclick="this.closest('dialog').close()">انصراف</button><button class="danger" id="ok-go">تأیید</button></div></dialog>
+
+<div id="toasts"></div>
 <script>
 const BASE='{{ base }}';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(t,er){const d=document.createElement('div');d.className='toast'+(er?' er':'');d.textContent=t;$('#toasts').append(d);setTimeout(()=>d.remove(),er?4200:2200)}
 async function api(p,method='GET',body){
-  const r=await fetch('/api'+p,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
-  if(r.status===401){location=BASE;return null}
-  if(!r.ok){const j=await r.json().catch(()=>({}));alert(j.detail||'خطا');return null}
-  return r.json();
+  let r;try{r=await fetch('/api'+p,{method,headers:{'Content-Type':'application/json','X-Panel':'1'},body:body?JSON.stringify(body):undefined})}
+  catch(e){toast('اتصال به سرور برقرار نشد',1);return null}
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){if(j.detail==='unauthorized'){location=BASE;return null}toast(j.detail||'خطا',1);return null}
+  return j;
 }
+function confirmBox(t,m,go){$('#ok-t').textContent=t;$('#ok-m').textContent=m;const b=$('#ok-go');b.onclick=async()=>{$('#dlg-ok').close();await go()};$('#dlg-ok').showModal()}
 const mb=k=>k?(k/1000).toFixed(k%1000?2:0):'∞';
-const fmt=b=>{b=+b||0;const u=['B','KB','MB','GB','TB'];let i=0;while(b>=1024&&i<4){b/=1024;i++}return b.toFixed(i?2:0)+' '+u[i]};
+const fmt=b=>{b=+b||0;const u=['B','KB','MB','GB','TB'];let i=0;while(b>=1024&&i<4){b/=1024;i++}return '\u2066'+b.toFixed(i?2:0)+' '+u[i]+'\u2069'};
+const ico=n=>`<svg class="i"><use href="#i-${n}"/></svg>`;
+const KIND={'web-http':'xhttp','web-ws':'WebSocket','edge-tcp':'مستقیم A','edge-http':'مستقیم B'};
+
+/* tabs */
+function tab(n){document.querySelectorAll('[id^=tab-]').forEach(e=>e.hidden=e.id!=='tab-'+n);
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===n));
+  try{sessionStorage.setItem('tab',n)}catch(e){}if(n==='settings')loadSettings()}
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)tab(b.dataset.tab)};
+$('#theme').onclick=()=>{const d=document.documentElement,n=d.dataset.theme==='dark'?'light':'dark';d.dataset.theme=n;try{localStorage.setItem('theme',n)}catch(e){}};
+
+/* overview */
 function chart(days){
-  const el=$('#chart');if(!days.length){el.innerHTML='<text x="350" y="90" text-anchor="middle" fill="#8b96b0">هنوز داده‌ای ثبت نشده</text>';return}
+  const el=$('#chart');if(!days.length){el.innerHTML='<text x="350" y="100" text-anchor="middle" style="fill:var(--mu)">هنوز داده‌ای ثبت نشده</text>';return}
   const max=Math.max(1,...days.map(d=>d.up+d.down)),w=700/days.length;let h='';
-  days.forEach((d,i)=>{const x=i*w+w*.15,bw=w*.7,hd=d.down/max*140,hu=d.up/max*140;
-    h+=`<rect x="${x}" y="${150-hd}" width="${bw}" height="${hd}" fill="#4f6bed" rx="3"/><rect x="${x}" y="${150-hd-hu}" width="${bw}" height="${hu}" fill="#1aa36f" rx="3"/>
-    <text x="${x+bw/2}" y="166" font-size="10" text-anchor="middle" fill="#8b96b0">${esc(d.day.slice(5))}</text>
+  for(const g of [0.25,0.5,0.75,1])h+=`<line x1="0" x2="700" y1="${160-g*140}" y2="${160-g*140}" style="stroke:var(--bd)" stroke-dasharray="3 4"/>`;
+  days.forEach((d,i)=>{const x=i*w+w*.18,bw=w*.64,hd=d.down/max*140,hu=d.up/max*140;
+    h+=`<rect x="${x}" y="${160-hd}" width="${bw}" height="${hd}" style="fill:var(--pr)" rx="3"/><rect x="${x}" y="${160-hd-hu}" width="${bw}" height="${hu}" style="fill:var(--ok)" rx="3"/>
+    <text x="${x+bw/2}" y="180" font-size="10" text-anchor="middle" style="fill:var(--mu)">${esc(d.day.slice(5))}</text>
     <title>${esc(d.day)}: ↓${fmt(d.down)} ↑${fmt(d.up)}</title>`});
   el.innerHTML=h;
 }
+let CLS=[],EPS=[];
 async function load(){
   const st=await api('/stats');
-  if(st){$('#tiles').innerHTML=[['کاربران',st.accounts],['فعال',st.active],['دانلود',fmt(st.down)],['آپلود',fmt(st.up)],['مجموع',fmt(st.up+st.down)]]
-    .map(t=>`<div class="tile"><small>${t[0]}</small><b>${t[1]}</b></div>`).join('');chart(st.days)}
-  const eps=(await api('/endpoints'))||[];
-  $('#eps').innerHTML='<tr><th>#</th><th>نام</th><th>نوع</th><th>حالت</th><th>کاربر</th><th></th></tr>'+
-    eps.map(i=>`<tr><td>${i.id}</td><td>${esc(i.remark)}</td><td>${esc(i.kind)}</td><td>${esc(i.mode)}</td><td>${i.accounts}</td><td><button class="danger" onclick="delEp(${i.id})">حذف</button></td></tr>`).join('');
-  $('#c-ep').innerHTML=eps.map(i=>`<option value="${i.id}">${esc(i.remark)}</option>`).join('');
-  const cls=(await api('/accounts'))||[];
-  $('#cls').innerHTML='<tr><th>نام</th><th>نقطه اتصال</th><th>مصرف</th><th>↓ / ↑</th><th>سرعت ↓ / ↑ (Mbps)</th><th>انقضا</th><th>وضعیت</th><th></th></tr>'+
-    cls.map(c=>{const p=c.total?Math.min(100,c.used*100/c.total):0,k=p>=90?'d':p>=70?'w':'';
-    return `<tr><td>${esc(c.name)}</td><td>${esc(c.endpoint)}</td>
-    <td>${fmt(c.used)} / ${c.total?fmt(c.total):'∞'}${c.total?`<div class="bar ${k}"><div style="width:${p}%"></div></div>`:''}</td>
-    <td>${fmt(c.down)} / ${fmt(c.up)}</td><td>${mb(c.limit_down)} / ${mb(c.limit_up)}</td><td>${esc(c.expiry||'∞')}</td>
-    <td><span class="badge ${c.active?'b-ok':'b-er'}">${c.active?'فعال':'غیرفعال'}</span></td>
-    <td class="acts"><button onclick="copySub('${esc(c.token)}')">لینک</button>
-    <button class="ghost" onclick="tog(${c.id})">${c.enable?'توقف':'فعال‌سازی'}</button>
-    <button class="ghost" onclick="renew(${c.id})">تمدید</button>
-    <button class="ghost" onclick="lim(${c.id},${c.limit_down},${c.limit_up})">سرعت</button>
-    <button class="ghost" onclick="rst(${c.id})">ریست</button>
-    <button class="danger" onclick="delAcc(${c.id})">حذف</button></td></tr>`}).join('');
+  if(st){$('#tiles').innerHTML=[['کاربران',st.accounts,'users'],['فعال',st.active,'check'],['دانلود',fmt(st.down),'down'],['آپلود',fmt(st.up),'up'],['مجموع',fmt(st.up+st.down),'sum']]
+    .map(t=>`<div class="tile"><i>${ico(t[2])}</i><div><small>${t[0]}</small><b>${t[1]}</b></div></div>`).join('');chart(st.days)}
+  EPS=(await api('/endpoints'))||[];
+  $('#eps').innerHTML=EPS.length?EPS.map(i=>`<div class="ep"><h3>${esc(i.remark)}</h3><dl><dt>نوع</dt><dd>${esc(KIND[i.kind]||i.kind)}</dd><dt>حالت</dt><dd>${esc(i.mode)}</dd><dt>کاربر</dt><dd>${i.accounts}</dd></dl>
+    <div class="toolbar" style="margin:0"><button class="ghost sm" onclick="rotEp(${i.id},'${esc(i.remark)}')">تغییر مسیر مخفی</button>
+    <button class="danger sm" onclick="delEp(${i.id},'${esc(i.remark)}')">حذف</button></div></div>`).join(''):'<div class="empty">هنوز نقطه اتصالی نساخته‌اید.</div>';
+  $('#c-ep').innerHTML=EPS.map(i=>`<option value="${i.id}">${esc(i.remark)} (${esc(KIND[i.kind]||i.kind)})</option>`).join('');
+  CLS=(await api('/accounts'))||[];renderUsers();
 }
-async function addEndpoint(){if(await api('/endpoints','POST',{remark:$('#ep-remark').value,kind:$('#ep-kind').value,mode:$('#ep-mode').value}))load()}
-async function delEp(id){if(confirm('حذف نقطه اتصال و همه کاربرانش؟')&&await api('/endpoints/'+id,'DELETE'))load()}
-async function addAccount(){
-  if(await api('/accounts','POST',{endpoint_id:+$('#c-ep').value,name:$('#c-name').value,gb:+$('#c-gb').value||0,days:+$('#c-days').value||0,down_mbps:+$('#c-down').value||0,up_mbps:+$('#c-up').value||0}))load()}
+function renderUsers(){
+  const q=($('#q').value||'').trim().toLowerCase();
+  const list=CLS.filter(c=>!q||c.name.toLowerCase().includes(q)||c.endpoint.toLowerCase().includes(q));
+  $('#cls').innerHTML=list.length?`<thead><tr><th>نام</th><th>نقطه اتصال</th><th>مصرف</th><th>سرعت ↓ / ↑</th><th>انقضا</th><th>وضعیت</th><th></th></tr></thead><tbody>`+
+    list.map(c=>{const p=c.total?Math.min(100,c.used*100/c.total):0,k=p>=90?'d':p>=70?'w':'';
+    return `<tr><td data-l="نام"><span class="nm">${esc(c.name)}</span></td><td data-l="نقطه اتصال">${esc(c.endpoint)}</td>
+    <td data-l="مصرف"><div>${fmt(c.used)} / ${c.total?fmt(c.total):'∞'}${c.total?`<div class="bar ${k}"><div style="width:${p}%"></div></div>`:''}<div class="mu">↓ ${fmt(c.down)} · ↑ ${fmt(c.up)}</div></div></td>
+    <td data-l="سرعت"><span dir="ltr">${mb(c.limit_down)} / ${mb(c.limit_up)} <span class="mu">Mbps</span></span></td><td data-l="انقضا"><span dir="ltr">${esc(c.expiry||'∞')}</span></td>
+    <td data-l="وضعیت"><span class="badge ${c.active?'b-ok':'b-er'}">${c.active?'فعال':'غیرفعال'}</span></td>
+    <td class="acts"><button class="sm" onclick="copySub('${esc(c.token)}')">لینک</button>
+    <button class="ghost sm" onclick="tog(${c.id})">${c.enable?'توقف':'فعال‌سازی'}</button>
+    <button class="ghost sm" onclick="openRenew(${c.id})">تمدید</button>
+    <button class="ghost sm" onclick="openLimit(${c.id})">سرعت</button>
+    <button class="ghost sm" onclick="rst(${c.id})">ریست</button>
+    <button class="danger sm" onclick="delAcc(${c.id},'${esc(c.name)}')">حذف</button></td></tr>`}).join('')+'</tbody>'
+    :'<tbody><tr><td class="empty">'+(CLS.length?'کاربری پیدا نشد.':'هنوز کاربری نساخته‌اید.')+'</td></tr></tbody>';
+}
+$('#q').oninput=renderUsers;
+
+/* actions */
+function openUser(){if(!EPS.length){toast('اول یک نقطه اتصال بسازید',1);tab('endpoints');return}$('#c-name').value='';$('#dlg-user').showModal()}
+async function addAccount(){const r=await api('/accounts','POST',{endpoint_id:+$('#c-ep').value,name:$('#c-name').value,gb:+$('#c-gb').value||0,days:+$('#c-days').value||0,down_mbps:+$('#c-down').value||0,up_mbps:+$('#c-up').value||0});
+  if(r){$('#dlg-user').close();toast('کاربر ساخته شد');load()}}
+async function addEndpoint(){const r=await api('/endpoints','POST',{remark:$('#ep-remark').value,kind:$('#ep-kind').value,mode:$('#ep-mode').value});
+  if(r){$('#dlg-ep').close();toast('نقطه اتصال ساخته شد');load()}}
+function rotEp(id,n){confirmBox('تغییر مسیر مخفی','مسیر (و در حالت مستقیم، کلید کوتاه) «'+n+'» عوض می‌شود. لینک‌های فعلی از کار می‌افتند و همه باید اشتراک را به‌روز کنند.',async()=>{if(await api('/endpoints/'+id+'/rotate','POST')){toast('مسیر جدید ساخته شد');load()}})}
+function delEp(id,n){confirmBox('حذف نقطه اتصال','«'+n+'» و همهٔ کاربرانش حذف می‌شوند.',async()=>{if(await api('/endpoints/'+id,'DELETE')){toast('حذف شد');load()}})}
 async function tog(id){if(await api('/accounts/'+id+'/toggle','POST'))load()}
-async function rst(id){if(await api('/accounts/'+id+'/reset','POST'))load()}
-async function renew(id){const g=prompt('حجم جدید (GB، ۰=نامحدود):','0');if(g===null)return;const d=prompt('تعداد روز (۰=نامحدود):','30');if(d===null)return;
-  if(await api('/accounts/'+id+'/renew','POST',{gb:+g||0,days:+d||0}))load()}
-async function lim(id,d,u){const a=prompt('سرعت دانلود (Mbps، ۰=نامحدود):',d?d/1000:'0');if(a===null)return;const b=prompt('سرعت آپلود (Mbps، ۰=نامحدود):',u?u/1000:'0');if(b===null)return;
-  if(await api('/accounts/'+id+'/limit','POST',{down_mbps:+a||0,up_mbps:+b||0}))load()}
-async function delAcc(id){if(confirm('حذف کاربر؟')&&await api('/accounts/'+id,'DELETE'))load()}
-function copySub(t){const u=location.origin+'/sub/'+t;navigator.clipboard.writeText(u).then(()=>alert('کپی شد:\n'+u))}
+function rst(id){confirmBox('ریست مصرف','مصرف این کاربر صفر می‌شود.',async()=>{if(await api('/accounts/'+id+'/reset','POST')){toast('ریست شد');load()}})}
+function delAcc(id,n){confirmBox('حذف کاربر','«'+n+'» حذف می‌شود و لینکش از کار می‌افتد.',async()=>{if(await api('/accounts/'+id,'DELETE')){toast('حذف شد');load()}})}
+let CUR=0;const acc=id=>CLS.find(c=>c.id===id);
+function openLimit(id){CUR=id;const c=acc(id);$('#lim-who').textContent=c.name;$('#l-down').value=c.limit_down?c.limit_down/1000:0;$('#l-up').value=c.limit_up?c.limit_up/1000:0;$('#dlg-limit').showModal()}
+async function saveLimit(){if(await api('/accounts/'+CUR+'/limit','POST',{down_mbps:+$('#l-down').value||0,up_mbps:+$('#l-up').value||0})){$('#dlg-limit').close();toast('ذخیره شد');load()}}
+function openRenew(id){CUR=id;$('#rn-who').textContent=acc(id).name;$('#r-gb').value=0;$('#r-days').value=30;$('#dlg-renew').showModal()}
+async function saveRenew(){if(await api('/accounts/'+CUR+'/renew','POST',{gb:+$('#r-gb').value||0,days:+$('#r-days').value||0})){$('#dlg-renew').close();toast('تمدید شد');load()}}
+function copySub(t){const u=location.origin+'/sub/'+t;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('لینک کپی شد'),()=>prompt('کپی کنید:',u))}
 async function logout(){await api('/logout','POST');location=BASE}
-load();setInterval(load,30000);
+
+/* settings */
+let SET=null;
+function fill(sel,items,val){$(sel).innerHTML=items.map(x=>`<option${x===val?' selected':''}>${esc(x)}</option>`).join('')}
+async function loadSettings(){
+  const s=await api('/settings');if(!s)return;SET=s;
+  $('#s-domains').value=s.domains.split(',').filter(Boolean).join('\n');$('#s-addr').value=s.addresses.split(',').filter(Boolean).join('\n');
+  fill('#s-fp',s.fps,s.fp);fill('#s-alpn',s.alpns,s.alpn);fill('#s-alpnws',s.alpns,s.alpn_ws);$('#s-pad').value=s.padding;
+  $('#s-obfs').checked=s.xhttp_obfs;$('#s-enc').checked=s.vlessenc;$('#enc-act').hidden=!s.vlessenc;
+  $('#s-frag').checked=s.frag;$('#s-flen').value=s.frag_len;$('#s-fint').value=s.frag_int;
+  $('#eff').innerHTML='<span class="mu">دامنهٔ فعال در لینک‌ها:</span>'+s.effective.map(h=>`<span class="chip">${esc(h)}</span>`).join('');
+  runDiag();
+}
+async function runDiag(){
+  const d=await api('/diag'+(EPS.some(e=>e.kind.startsWith('edge'))?'?front=1':''));if(!d)return;
+  $('#eff').innerHTML='<span class="mu">دامنهٔ فعال در لینک‌ها:</span>'+d.domains.map(x=>`<span class="chip ${x.ok?'ok':'er'}" title="${esc(x.ips.join(', '))}">${esc(x.host)} ${x.ok?'✓':'✗'}</span>`).join('');
+  const bad=d.domains.filter(x=>!x.ok);
+  $('#dns').hidden=!bad.length;
+  if(bad.length)$('#dns').innerHTML='⚠ این نام‌ها در DNS پیدا نشدند و لینک‌های ساخته‌شده با آن‌ها وصل نمی‌شوند: <b dir="ltr">'+bad.map(x=>esc(x.host)).join(', ')+'</b>. اگر دامنه را عوض یا پاک کرده‌اید، همین‌جا اصلاحش کنید.';
+  const f=d.front;$('#front-card').hidden=!f;
+  if(f)$('#front-res').innerHTML=f.error?`<span class="chip er">${esc(f.host)}: اتصال ناموفق (${esc(f.error)})</span>`
+    :`<span class="chip" title="مقصد">${esc(f.host)}</span> <span class="chip ${f.tls13?'ok':'er'}">TLS 1.3 ${f.tls13?'✓':'✗ ('+esc(f.tls||'?')+')'}</span> <span class="chip ${f.h2?'ok':'er'}">HTTP/2 ${f.h2?'✓':'✗'}</span>`
+    +((f.tls13&&f.h2)?'':'<p class="hint">این مقصد برای Reality مناسب نیست؛ متغیر FRONT_HOST را روی سایت دیگری بگذارید.</p>');
+}
+$('#s-enc').onchange=e=>{$('#enc-act').hidden=!e.target.checked};
+async function doSave(extra){
+  const b=$('#s-save');b.disabled=true;
+  const r=await api('/settings','PUT',Object.assign({domains:$('#s-domains').value,addresses:$('#s-addr').value,fp:$('#s-fp').value,alpn:$('#s-alpn').value,
+    alpn_ws:$('#s-alpnws').value,padding:$('#s-pad').value,xhttp_obfs:$('#s-obfs').checked,vlessenc:$('#s-enc').checked,
+    frag:$('#s-frag').checked,frag_len:$('#s-flen').value,frag_int:$('#s-fint').value},extra||{}));
+  b.disabled=false;if(r){toast('تنظیمات ذخیره شد');await loadSettings()}
+}
+function saveSettings(){
+  const risky=SET&&(SET.xhttp_obfs!==$('#s-obfs').checked||SET.vlessenc!==$('#s-enc').checked||SET.padding!==$('#s-pad').value.trim());
+  if(risky)confirmBox('تغییر تنظیمات سمت سرور','بعد از ذخیره، لینک‌های قبلی کار نمی‌کنند و همهٔ کاربران باید اشتراک را به‌روز کنند.',()=>doSave());else doSave();
+}
+function regen(){confirmBox('ساخت دوبارهٔ کلیدها','لینک‌های فعلی از کار می‌افتند و همه باید اشتراک را به‌روز کنند.',()=>doSave({regen_keys:true}))}
+
+try{tab(sessionStorage.getItem('tab')||'overview')}catch(e){tab('overview')}
+load();setInterval(()=>{if(!document.querySelector('dialog[open]'))load()},30000);
 </script></body></html>

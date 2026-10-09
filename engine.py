@@ -1,6 +1,7 @@
 import json, os, subprocess, sys, threading
 from datetime import datetime
-from models import Endpoint, Account, DailyStat
+import re
+from models import Endpoint, Account, DailyStat, get_settings
 
 CORE_BIN = os.getenv("CORE_BIN", "/usr/local/bin/appcore")
 CONF = "/tmp/core.json"
@@ -27,6 +28,16 @@ def gen_keys():
     return vals[0], vals[1]
 
 
+def gen_vlessenc():
+    """Return (decryption, encryption) strings for VLESS Encryption (X25519 variant: short enough for share links)."""
+    out = subprocess.check_output([CORE_BIN, "vlessenc"], text=True)
+    dec = re.findall(r'"decryption": "([^"]+)"', out)
+    enc = re.findall(r'"encryption": "([^"]+)"', out)
+    if not dec or not enc:
+        raise RuntimeError("core did not return VLESS encryption keys")
+    return dec[0], enc[0]
+
+
 def is_active(c):
     if not c.enable:
         return False
@@ -39,6 +50,7 @@ def is_active(c):
 
 def build_config(db):
     """Return (core config, speed-limit relays)."""
+    st = get_settings(db)
     limited = []  # active users that have a speed limit
     inbounds = [{
         "tag": "api", "listen": "127.0.0.1", "port": API_PORT, "protocol": "dokodemo-door",
@@ -59,8 +71,10 @@ def build_config(db):
             continue
         stream = {}
         if ib.kind == "web-http":
-            stream = {"network": "xhttp", "security": "none",
-                      "xhttpSettings": {"path": ib.path, "mode": ib.mode}}
+            xs = {"path": ib.path, "mode": ib.mode, "xPaddingBytes": st["padding"]}
+            if st["xhttp_obfs"] == "1":
+                xs["xPaddingObfsMode"] = True      # clients must use the same setting (share links carry it)
+            stream = {"network": "xhttp", "security": "none", "xhttpSettings": xs}
             listen, port = "127.0.0.1", WEB_PORT
         elif ib.kind == "web-ws":
             stream = {"network": "ws", "security": "none", "wsSettings": {"path": ib.path}}
@@ -78,9 +92,10 @@ def build_config(db):
             if ib.kind == "edge-http":
                 stream["xhttpSettings"] = {"path": ib.path, "mode": ib.mode}
             listen, port = "0.0.0.0", EDGE_PORT
+        dec = st["venc_dec"] if (st["vlessenc"] == "1" and st["venc_dec"] and ib.kind.startswith("web")) else "none"
         inbounds.append({
             "tag": f"in{ib.id}", "listen": listen, "port": port, "protocol": "vless",
-            "settings": {"clients": clients, "decryption": "none"},
+            "settings": {"clients": clients, "decryption": dec},
             "streamSettings": stream,
         })
     outbounds = [{"protocol": "freedom", "tag": "direct"}, {"protocol": "blackhole", "tag": "block"}]

@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, BigInteger, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, BigInteger, DateTime, ForeignKey, Text
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 DB_PATH = os.getenv("DB_PATH", "/data/panel.db")
@@ -53,3 +53,49 @@ class DailyStat(Base):
     day = Column(String, primary_key=True)  # YYYY-MM-DD (UTC)
     up = Column(BigInteger, default=0)
     down = Column(BigInteger, default=0)
+
+
+class Setting(Base):
+    """Key/value settings edited from the dashboard (they override the environment defaults)."""
+    __tablename__ = "settings"
+    key = Column(String, primary_key=True)
+    value = Column(Text, default="")
+
+
+def _env_list(name):
+    return os.getenv(name, "").replace("https://", "").replace("http://", "").strip().strip("/")
+
+
+SETTING_DEFAULTS = {
+    "domains": _env_list("PANEL_DOMAIN"),                 # comma separated; first is the main one
+    "addresses": os.getenv("CLIENT_ADDRESS", ""),         # comma separated clean Cloudflare IPs
+    "fp": os.getenv("CLIENT_FP", "chrome"),
+    "alpn": os.getenv("CLIENT_ALPN", "h2"),
+    "alpn_ws": os.getenv("CLIENT_ALPN_WS", "http/1.1"),
+    "padding": "100-1000",
+    "xhttp_obfs": "0",
+    "frag": "1",              # TLS fragment in the JSON client config (hides the SNI from simple DPI)
+    "frag_len": "100-200",
+    "frag_int": "10-20",
+    "vlessenc": "0",
+    "venc_dec": "",
+    "venc_enc": "",
+}
+
+
+def get_settings(db):
+    d = dict(SETTING_DEFAULTS)
+    for r in db.query(Setting).all():
+        if r.key in d:
+            d[r.key] = r.value or ""
+    return d
+
+
+def put_settings(db, items):
+    for k, v in items.items():
+        row = db.get(Setting, k)
+        if row:
+            row.value = str(v)
+        else:
+            db.add(Setting(key=k, value=str(v)))
+    db.commit()

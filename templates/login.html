@@ -1,12 +1,15 @@
 <!doctype html>
 <html lang="fa" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ورود</title><link rel="stylesheet" href="/static/style.css"></head>
+<meta name="robots" content="noindex,nofollow">
+<title>ورود</title><link rel="stylesheet" href="/static/style.css">
+<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script></head>
 <body class="center">
-<form class="card" method="post" action="{{ base }}/login">
-  <h1>ورود به پنل</h1>
-  {% if err %}<p class="err">نام کاربری یا رمز اشتباه است</p>{% endif %}
-  <input name="username" placeholder="نام کاربری" autocomplete="username" required>
-  <input name="password" type="password" placeholder="رمز عبور" autocomplete="current-password" required>
-  <button>ورود</button>
+<form class="card narrow" method="post" action="{{ base }}/login">
+  <div class="hero"><div class="logo"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6l8-3z"/></svg></div>
+  <h1>ورود به پنل</h1></div>
+  {% if err %}<p class="err">نام کاربری یا رمز اشتباه است.</p>{% endif %}
+  <label for="u">نام کاربری</label><input id="u" name="username" autocomplete="username" required>
+  <label for="p">رمز عبور</label><input id="p" name="password" type="password" autocomplete="current-password" required>
+  <div style="margin-top:18px"><button style="width:100%">ورود</button></div>
 </form></body></html>

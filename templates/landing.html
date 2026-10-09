@@ -1,16 +1,30 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Assets</title>
+<title>Northfield Notes</title>
+<meta name="description" content="Short notes on software, writing and the things in between.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23374151'/%3E%3Cpath d='M9 22V10l14 12V10' stroke='%23fff' stroke-width='2.5' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
-body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#f6f7f9;color:#2b2f36}
-main{text-align:center;padding:24px}h1{font-size:1.6rem;margin:0 0 8px;font-weight:600}
-p{color:#6b7280;margin:4px 0}small{display:block;margin-top:28px;color:#9aa1ac}
-@media(prefers-color-scheme:dark){body{background:#101317;color:#e5e7eb}}
+:root{--bg:#fafaf9;--tx:#1c1917;--mu:#78716c;--bd:#e7e5e4;--ac:#374151}
+@media(prefers-color-scheme:dark){:root{--bg:#141413;--tx:#e7e5e4;--mu:#a8a29e;--bd:#2a2927;--ac:#d6d3d1}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.7 Georgia,"Times New Roman",serif}
+header,main,footer{max-width:680px;margin:0 auto;padding:0 22px}
+header{display:flex;justify-content:space-between;align-items:baseline;padding-top:36px;padding-bottom:18px;border-bottom:1px solid var(--bd)}
+header b{font:600 1.05rem system-ui,sans-serif;letter-spacing:.02em}nav a{font:.9rem system-ui,sans-serif;color:var(--mu);margin-left:18px;text-decoration:none}
+main{padding-top:30px;padding-bottom:20px}article{padding:18px 0;border-bottom:1px solid var(--bd)}
+article h2{margin:0 0 4px;font-size:1.25rem;font-weight:600}article h2 a{color:var(--tx);text-decoration:none}
+article small{font:.82rem system-ui,sans-serif;color:var(--mu)}article p{margin:8px 0 0;color:var(--mu)}
+footer{padding-top:22px;padding-bottom:40px;font:.82rem system-ui,sans-serif;color:var(--mu)}
 </style></head>
-<body><main>
-<h1>Static assets</h1>
-<p>This endpoint serves static files for authorized clients.</p>
-<p>No public content is available here.</p>
-<small>&copy; 2026</small>
-</main></body></html>
+<body>
+<header><b>Northfield Notes</b><nav><a>Archive</a><a>About</a></nav></header>
+<main>
+<article><h2><a>Keeping small projects small</a></h2><small>September 2026 · 4 min read</small>
+<p>A few habits that help side projects survive past the first weekend: write the README first, ship the boring version, and delete more than you add.</p></article>
+<article><h2><a>Notes on reading slowly</a></h2><small>August 2026 · 3 min read</small>
+<p>Why a single chapter a day beats a weekend binge, and what changes when you keep a margin notebook next to the book.</p></article>
+<article><h2><a>A tidy home server, revisited</a></h2><small>June 2026 · 6 min read</small>
+<p>Backups, updates and one very small dashboard. Nothing clever, which is the point.</p></article>
+</main>
+<footer>&copy; 2026 Northfield Notes. All rights reserved.</footer>
+</body></html>

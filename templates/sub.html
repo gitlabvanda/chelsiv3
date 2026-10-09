@@ -1,15 +1,50 @@
 <!doctype html>
 <html lang="fa" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>اشتراک {{ c.name }}</title><link rel="stylesheet" href="/static/style.css"></head>
+<meta name="robots" content="noindex,nofollow">
+<title>اشتراک {{ c.name }}</title><link rel="stylesheet" href="/static/style.css">
+<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script></head>
 <body class="center">
-<div class="card">
-  <h1>{{ c.name }}</h1>
-  <p class="{{ 'ok' if active else 'err' }}">{{ 'فعال' if active else 'غیرفعال / منقضی' }}</p>
-  <p>مصرف: {{ used }} GB {% if total %}از {{ total }} GB{% else %}(نامحدود){% endif %}</p>
-  {% if total %}<div class="bar"><div style="width:{{ pct }}%"></div></div>{% endif %}
-  <p>انقضا: {{ expiry or 'نامحدود' }}</p>
-  <textarea id="l" readonly rows="5" dir="ltr">{{ link }}</textarea>
-  <button onclick="navigator.clipboard.writeText(document.getElementById('l').value);this.textContent='کپی شد ✓'">کپی کانفیگ</button>
-  <p class="muted">برای اپ‌های کلاینت می‌توانید همین آدرس صفحه را به‌عنوان لینک اشتراک اضافه کنید.</p>
-</div></body></html>
+<div class="sub-wrap">
+ <div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+   <h1 style="font-size:1.25rem">{{ c.name }}</h1>
+   <span class="badge {{ 'b-ok' if active else 'b-er' }}">{{ 'فعال' if active else 'غیرفعال / منقضی' }}</span>
+  </div>
+  <div class="kv">
+   <div><small>مصرف</small><span dir="ltr"><b>{{ used }} GB</b>{% if total %}<span class="mu"> / {{ total }} GB</span>{% endif %}</span>{% if not total %}<span class="mu"> (نامحدود)</span>{% endif %}</div>
+   <div><small>انقضا</small><b dir="ltr">{{ expiry or 'نامحدود' }}</b></div>
+   {% if down or up %}<div><small>سرعت ↓ / ↑</small><span dir="ltr"><b>{{ '%g'|format(down/1000) if down else '∞' }} / {{ '%g'|format(up/1000) if up else '∞' }}</b><span class="mu"> Mbps</span></span></div>{% endif %}
+  </div>
+  {% if total %}<div class="bar {{ 'd' if pct>=90 else 'w' if pct>=70 else '' }}"><div style="width:{{ pct }}%"></div></div>{% endif %}
+ </div>
+
+ <div class="card" style="text-align:center">
+  <h2>لینک اشتراک</h2>
+  <p class="sub">این آدرس را در برنامهٔ کلاینت به‌عنوان اشتراک (Subscription) اضافه کنید یا QR را اسکن کنید.</p>
+  {% if qr %}<div class="qr">{{ qr|safe }}</div>{% endif %}
+  <div class="copyrow"><input class="ltr" id="su" readonly value="{{ sub_url }}">
+   <button onclick="cp('su',this)">کپی</button></div>
+ </div>
+
+ <div class="card">
+  <h2>کانفیگ‌ها</h2>
+  <p class="sub">اگر برنامه اشتراک را قبول نکرد، هرکدام از این لینک‌ها را جداگانه کپی کنید.</p>
+  {% for l in links %}<div class="lnk"><code id="l{{ loop.index }}">{{ l }}</code><button class="sm soft" onclick="cpt('l{{ loop.index }}',this)">کپی</button></div>{% endfor %}
+ </div>
+ {% if json_urls %}
+ <div class="card">
+  <h2>کانفیگ کامل با Fragment (پیشرفته)</h2>
+  <p class="sub">برای برنامه‌هایی که ورود کانفیگ کامل Xray را قبول می‌کنند. ClientHello در TLS به تکه‌های کوچک شکسته می‌شود تا نام دامنه (SNI) در یک بستهٔ واحد دیده نشود. اگر اتصال کند شد، با مدیر تماس بگیرید.</p>
+  {% for label, u in json_urls %}
+  <div class="copyrow"><input class="ltr" id="j{{ loop.index }}" readonly value="{{ u }}"><button onclick="cp('j{{ loop.index }}',this)">کپی آدرس</button><a href="{{ u }}"><button class="soft" type="button">نمایش JSON</button></a></div>
+  <p class="hint" dir="ltr" style="margin:2px 0 10px">{{ label }}</p>
+  {% endfor %}
+ </div>
+ {% endif %}
+</div>
+<script>
+function done(b){const t=b.textContent;b.textContent='کپی شد ✓';setTimeout(()=>b.textContent=t,1400)}
+function cp(id,b){const e=document.getElementById(id);e.select();navigator.clipboard.writeText(e.value).then(()=>done(b))}
+function cpt(id,b){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>done(b))}
+</script></body></html>
