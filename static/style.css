@@ -141,21 +141,3 @@ button.sm{font-weight:500}
 .jhead{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .jrow details{margin-top:8px}.jrow summary{cursor:pointer;color:var(--mu);font-size:.82rem}
 .jrow textarea{margin-top:8px;min-height:220px;font-size:.78rem;line-height:1.5;white-space:pre}
-
-/* guide */
-.guide details{border:1px solid var(--bd);border-radius:14px;background:var(--card);margin-bottom:10px;box-shadow:var(--sh)}
-.guide summary{cursor:pointer;padding:14px 18px;font-weight:600;font-size:.96rem;list-style:none;display:flex;align-items:center;gap:10px}
-.guide summary::-webkit-details-marker{display:none}
-.guide summary::before{content:"";width:8px;height:8px;border-inline-start:2px solid var(--mu);border-block-end:2px solid var(--mu);transform:rotate(45deg);transition:.15s;flex:none;margin-inline-end:4px}
-.guide details[open]>summary::before{transform:rotate(-135deg)}
-.guide .gb{padding:2px 20px 18px;color:var(--tx)}
-.guide .gb h4{margin:18px 0 6px;font-size:.92rem;font-weight:600}
-.guide .gb p{margin:6px 0}.guide .gb ul,.guide .gb ol{margin:6px 0;padding-inline-start:22px}.guide .gb li{margin:4px 0}
-.guide .gb table{margin:10px 0;font-size:.85rem;display:block;overflow-x:auto}
-.guide .gb th,.guide .gb td{padding:8px 10px;border:1px solid var(--bd);text-align:start;vertical-align:top}
-.guide .gb th{background:var(--bg2)}
-.guide .tip{background:var(--prs);border-radius:12px;padding:10px 14px;margin:12px 0;font-size:.86rem}
-.guide .warn{background:color-mix(in srgb,var(--wa) 13%,transparent);border:1px solid color-mix(in srgb,var(--wa) 40%,transparent);border-radius:12px;padding:10px 14px;margin:12px 0;font-size:.86rem}
-.guide code{direction:ltr;unicode-bidi:isolate;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.8em;background:var(--bg2);padding:1px 6px;border-radius:6px}
-.guide pre{direction:ltr;text-align:left;background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;overflow-x:auto;font-size:.8rem;line-height:1.55;margin:10px 0}
-.guide pre code{background:none;padding:0}
