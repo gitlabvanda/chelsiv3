@@ -598,7 +598,7 @@ def client_json(c, st, hosts, idx):
             {"tag": "http", "listen": "127.0.0.1", "port": 10809, "protocol": "http"},
         ],
         "outbounds": outbounds,
-        "routing": {"domainStrategy": "IPIfNonMatch", "rules": [
+        "routing": {"domainStrategy": "AsIs", "rules": [
             {"type": "field", "ip": ["127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
              "outboundTag": "direct"}]},
     }
