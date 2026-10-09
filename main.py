@@ -27,11 +27,13 @@ _fails = {}
 _gfails = []   # timestamps of recent failed logins from all addresses
 POOL = ThreadPoolExecutor(max_workers=4)
 FRONT_HOST = os.getenv("FRONT_HOST", "www.cloudflare.com:443")
-TCP_DOMAIN = os.getenv("TCP_PROXY_DOMAIN", "")   # Railway TCP Proxy domain (for edge mode)
-TCP_PORT = os.getenv("TCP_PROXY_PORT", "")       # Railway TCP Proxy public port
+TCP_DOMAIN = (os.getenv("EDGE_DOMAIN") or os.getenv("TCP_PROXY_DOMAIN", "")).strip()   # public TCP host of the direct modes
+TCP_PORT = (os.getenv("EDGE_PUBLIC_PORT") or os.getenv("TCP_PROXY_PORT", "")).strip()  # public TCP port of the direct modes
 # Optional raw JSON merged into the xhttp "extra" link parameter (advanced)
 XHTTP_EXTRA = os.getenv("XHTTP_EXTRA", "").strip()
 FRAG_MAX_SPLIT = os.getenv("FRAG_MAX_SPLIT", "3-6").strip()
+XHTTP_KINDS = ("web-http", "edge-http")          # the only kinds that have a transfer mode
+MODES = ("packet-up", "stream-up", "stream-one")
 FP_OK = ("chrome", "firefox", "safari", "ios", "android", "edge", "360", "qq", "random", "randomized")
 ALPN_OK = ("h2", "http/1.1", "h2,http/1.1")
 HOST_RE = re.compile(r"^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$")
@@ -253,7 +255,7 @@ def list_endpoints(db=Depends(get_db)):
 def add_endpoint(data: EndpointIn, db=Depends(get_db)):
     if data.kind not in ("web-http", "web-ws", "edge-tcp", "edge-http"):
         raise HTTPException(400, "invalid kind")
-    if data.mode not in ("packet-up", "stream-up", "stream-one"):
+    if data.mode not in MODES:
         raise HTTPException(400, "invalid mode")
     is_edge = data.kind.startswith("edge")
     for i in db.query(m.Endpoint).all():
@@ -261,10 +263,11 @@ def add_endpoint(data: EndpointIn, db=Depends(get_db)):
         if (is_edge and i.kind.startswith("edge")) or i.kind == data.kind:
             raise HTTPException(400, "only one endpoint of this kind is supported (one port each)")
     if data.kind == "web-ws":
-        ib = m.Endpoint(remark=data.remark.strip() or "endpoint", kind=data.kind, mode="ws",
+        ib = m.Endpoint(remark=data.remark.strip()[:64] or "endpoint", kind=data.kind, mode="ws",
                         path="/w/" + secrets.token_hex(6))   # exact path, no trailing slash
     else:
-        ib = m.Endpoint(remark=data.remark.strip() or "endpoint", kind=data.kind, mode=data.mode,
+        ib = m.Endpoint(remark=data.remark.strip()[:64] or "endpoint", kind=data.kind,
+                        mode=data.mode if data.kind in XHTTP_KINDS else "tcp",
                         path="/s/" + secrets.token_hex(6) + "/")
     if is_edge:
         ib.key_a, ib.key_b = eng.gen_keys()
@@ -273,6 +276,36 @@ def add_endpoint(data: EndpointIn, db=Depends(get_db)):
     db.commit()
     eng.restart(db)
     return {"id": ib.id}
+
+
+class EndpointEdit(BaseModel):
+    remark: str | None = None
+    mode: str | None = None
+
+
+@app.put("/api/endpoints/{iid}", dependencies=[Depends(auth)])
+def edit_endpoint(iid: int, data: EndpointEdit, db=Depends(get_db)):
+    """Rename an endpoint or change its xhttp transfer mode. The type, keys and path are never touched here."""
+    ib = db.get(m.Endpoint, iid)
+    if not ib:
+        raise HTTPException(404, "not found")
+    restart = False
+    if data.remark is not None:
+        name = data.remark.strip()
+        if not name or len(name) > 64:
+            raise HTTPException(400, "name must be 1 to 64 characters")
+        ib.remark = name            # only used in link names: no restart needed
+    if data.mode is not None and data.mode != ib.mode:
+        if ib.kind not in XHTTP_KINDS:
+            raise HTTPException(400, "this endpoint type has no transfer mode")
+        if data.mode not in MODES:
+            raise HTTPException(400, "invalid mode")
+        ib.mode = data.mode
+        restart = True              # the mode is part of the server settings
+    db.commit()
+    if restart:
+        eng.restart(db)
+    return {"ok": True}
 
 
 @app.post("/api/endpoints/{iid}/rotate", dependencies=[Depends(auth)])
@@ -341,6 +374,49 @@ def add_client(data: AccountIn, db=Depends(get_db)):
     db.commit()
     eng.restart(db)
     return {"id": c.id}
+
+
+class AccountEdit(BaseModel):
+    name: str | None = None
+    gb: float | None = None          # new quota, 0 = unlimited; usage is kept
+    expiry: str | None = None        # YYYY-MM-DD (UTC, end of that day), "" = never
+    down_mbps: float | None = None
+    up_mbps: float | None = None
+
+
+@app.put("/api/accounts/{cid}", dependencies=[Depends(auth)])
+def edit_account(cid: int, data: AccountEdit, db=Depends(get_db)):
+    """Change name, quota, expiry date or speed limits. Usage counters and the link stay as they are."""
+    c = db.get(m.Account, cid)
+    if not c:
+        raise HTTPException(404, "not found")
+    before = (eng.is_active(c), c.limit_down_kbps or 0, c.limit_up_kbps or 0)
+    if data.name is not None:
+        name = data.name.strip()
+        if not name or len(name) > 64:
+            raise HTTPException(400, "name must be 1 to 64 characters")
+        c.name = name
+    if data.gb is not None:
+        if data.gb < 0 or data.gb > 100000:
+            raise HTTPException(400, "quota must be between 0 and 100000 GB")
+        c.total_bytes = int(data.gb * 1024 ** 3)
+    if data.expiry is not None:
+        if data.expiry.strip() == "":
+            c.expiry = None
+        else:
+            try:
+                d = datetime.strptime(data.expiry.strip(), "%Y-%m-%d")
+            except ValueError:
+                raise HTTPException(400, "expiry must look like 2026-12-31")
+            c.expiry = d.replace(hour=23, minute=59, second=59)
+    if data.down_mbps is not None:
+        c.limit_down_kbps = to_kbps(data.down_mbps)
+    if data.up_mbps is not None:
+        c.limit_up_kbps = to_kbps(data.up_mbps)
+    db.commit()
+    if before != (eng.is_active(c), c.limit_down_kbps or 0, c.limit_up_kbps or 0):
+        eng.restart(db)             # the core only needs a restart when who may connect, or how fast, changed
+    return {"ok": True}
 
 
 class LimitIn(BaseModel):
@@ -631,9 +707,10 @@ def sub(token: str, request: Request, db=Depends(get_db)):
             "pct": min(100, int((c.used_bytes or 0) * 100 / c.total_bytes)) if c.total_bytes else 0,
             "expiry": c.expiry.strftime("%Y-%m-%d") if c.expiry else "",
             "sub_url": sub_url, "qr": qr_svg(sub_url),
-            "json_urls": ([(a, f"https://{hosts[0]}/sub/{token}/json?i={n}")
-                           for n, (a, h) in enumerate(link_targets(st, hosts))]
-                          if c.endpoint.kind.startswith("web") else []),
+            "json_items": ([{"label": a, "url": f"https://{hosts[0]}/sub/{token}/json?i={n}",
+                             "text": json.dumps(client_json(c, st, hosts, n), indent=2, ensure_ascii=False)}
+                            for n, (a, h) in enumerate(link_targets(st, hosts))]
+                           if c.endpoint.kind.startswith("web") else []),
             "down": c.limit_down_kbps or 0, "up": c.limit_up_kbps or 0,
         })
     # subscription apps get base64 + usage header

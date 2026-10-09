@@ -24,6 +24,7 @@
   <button data-tab="users">کاربران</button>
   <button data-tab="endpoints">نقاط اتصال</button>
   <button data-tab="settings">تنظیمات</button>
+  <button data-tab="guide">راهنما</button>
  </nav>
  <div class="sp"></div>
  <button class="ghost sm" id="theme" title="تغییر تم"><svg class="i"><use href="#i-sun"/></svg></button>
@@ -70,13 +71,13 @@
     <div><label for="s-fp">اثرانگشت کلاینت (fp)</label><select id="s-fp"></select></div>
     <div><label for="s-alpn">ALPN برای xhttp</label><select id="s-alpn"></select></div>
     <div><label for="s-alpnws">ALPN برای WebSocket</label><select id="s-alpnws"></select></div>
-    <div><label for="s-pad">طول padding در xhttp (بایت)</label><input id="s-pad" class="ltr" placeholder="100-1000"></div>
+    <div><label for="s-pad">طول padding در xhttp (بایت)</label><input id="s-pad" class="ltr" placeholder="100-1000"><p class="hint">فقط xhttp روی دامنه؛ روی سرور، لینک و JSON اثر دارد.</p></div>
    </div>
   </div>
 
   <div class="card"><h2>پنهان‌سازی SNI (Fragment)</h2>
    <p class="sub">در «کانفیگ کامل JSON» صفحهٔ اشتراک هر کاربر، ClientHello در TLS به تکه‌های کوچک شکسته می‌شود تا DPI نتواند نام دامنه را در یک بستهٔ واحد ببیند. این تنظیم فقط روی آن کانفیگ JSON اثر دارد و سمت کلاینت اعمال می‌شود؛ لینک‌های vless:// را تغییر نمی‌دهد.</p>
-   <div class="switch"><input type="checkbox" id="s-frag"><div><b>Fragment در کانفیگ JSON</b><span>اگر اتصال کند یا ناپایدار شد، خاموشش کنید یا مقدارها را تغییر دهید.</span></div></div>
+   <div class="switch"><input type="checkbox" id="s-frag"><div><b>Fragment در کانفیگ JSON</b><span>اگر اتصال کند یا ناپایدار شد، خاموشش کنید یا مقدارها را تغییر دهید.</span><br><span class="scope">اعمال روی: فقط کانفیگ JSON · نقاط وب (xhttp و WebSocket)</span></div></div>
    <div class="grid2">
     <div><label for="s-flen">طول هر تکه (بایت)</label><input id="s-flen" class="ltr" placeholder="100-200"></div>
     <div><label for="s-fint">فاصله بین تکه‌ها (میلی‌ثانیه)</label><input id="s-fint" class="ltr" placeholder="10-20"></div>
@@ -89,12 +90,177 @@
   </div>
 
   <div class="card"><h2>ضد شناسایی (پیشرفته)</h2>
-   <p class="sub">این گزینه‌ها سمت سرور و کلاینت باید یکی باشند. بعد از تغییر، همهٔ کاربران باید اشتراک را به‌روز کنند و کلاینت‌های قدیمی وصل نمی‌شوند.</p>
-   <div class="switch"><input type="checkbox" id="s-obfs"><div><b>مبهم‌سازی padding در xhttp</b><span>الگوی طول و جای padding را کمتر ثابت و قابل‌تشخیص می‌کند. کلاینت باید نسخهٔ جدید Xray (حدوداً ۲۶ به بعد) داشته باشد.</span></div></div>
-   <div class="switch"><input type="checkbox" id="s-enc"><div><b>VLESS Encryption (رمزنگاری سرتاسری)</b><span>محتوای VLESS و مقصد اتصال را حتی از Cloudflare و Railway پنهان می‌کند. فقط کلاینت‌هایی که پشتیبانی می‌کنند وصل می‌شوند.</span>
+   <p class="sub">این بخش مخصوص کانفیگ JSON نیست: هم روی لینک‌های اشتراک (vless://) اثر دارد و هم روی کانفیگ JSON، چون سرور و کلاینت باید یکسان باشند. دامنهٔ اثر هر گزینه زیر آن نوشته شده. بعد از تغییر، همهٔ کاربران باید اشتراک را به‌روز کنند و کلاینت‌های قدیمی وصل نمی‌شوند.</p>
+   <div class="switch"><input type="checkbox" id="s-obfs"><div><b>مبهم‌سازی padding در xhttp</b><span>الگوی طول و جای padding را کمتر ثابت و قابل‌تشخیص می‌کند. کلاینت باید نسخهٔ جدید و سازگار داشته باشد.</span><br><span class="scope">اعمال روی: سرور، لینک و JSON · فقط xhttp روی دامنه</span></div></div>
+   <div class="switch"><input type="checkbox" id="s-enc"><div><b>VLESS Encryption (رمزنگاری سرتاسری)</b><span>محتوای VLESS و مقصد اتصال را حتی از Cloudflare و Railway پنهان می‌کند. فقط کلاینت‌هایی که پشتیبانی می‌کنند وصل می‌شوند.</span><br><span class="scope">اعمال روی: سرور، لینک و JSON · xhttp و WebSocket روی دامنه (حالت‌های مستقیم را شامل نمی‌شود)</span>
      <div id="enc-act" hidden style="margin-top:8px"><button class="ghost sm" onclick="regen()">ساخت دوبارهٔ کلیدها</button></div></div></div>
   </div>
   <div class="toolbar"><button id="s-save" onclick="saveSettings()">ذخیره تنظیمات</button></div>
+ </section>
+
+ <section id="tab-guide" class="guide" hidden>
+  <div class="card"><h2>راهنمای کامل پنل</h2>
+   <p class="sub" style="margin:0">همهٔ بخش‌های پنل از اولین راه‌اندازی تا عیب‌یابی اینجا توضیح داده شده است. هر بخش را با کلیک باز کنید.</p></div>
+
+  <details open><summary>۱. شروع سریع (پنج قدم)</summary><div class="gb">
+   <ol>
+    <li><b>دامنه را بررسی کنید.</b> در «تنظیمات ← دامنه و آدرس اتصال» دامنهٔ عمومی سرویس را بنویسید (اگر متغیر <code>PANEL_DOMAIN</code> را گذاشته‌اید، خودکار پر شده). کنار هر دامنه علامت ✓ یعنی در DNS پیدا شد.</li>
+    <li><b>یک نقطه اتصال بسازید.</b> «نقاط اتصال ← نقطه اتصال جدید»، نوع «xhttp روی دامنه (پیشنهادی)» را انتخاب کنید.</li>
+    <li><b>کاربر بسازید.</b> «کاربران ← کاربر جدید»؛ نام، نقطه اتصال، حجم، مدت و در صورت نیاز سرعت را بدهید.</li>
+    <li><b>لینک را به کاربر بدهید.</b> دکمهٔ «لینک» صفحهٔ اشتراک کاربر را باز می‌کند و «کپی اشتراک» آدرس اشتراک را کپی می‌کند.</li>
+    <li><b>کاربر وصل می‌شود.</b> آدرس اشتراک را در برنامهٔ کلاینت اضافه می‌کند (بخش ۶).</li>
+   </ol>
+   <div class="tip">هر تغییر در کاربران یا نقاط اتصال بلافاصله اعمال می‌شود و نیازی به دپلوی دوباره نیست. فقط هسته‌ی اتصال گاهی چند ثانیه ری‌استارت می‌شود و در آن لحظه اتصال‌های جاری قطع و دوباره برقرار می‌شوند.</div>
+  </div></details>
+
+  <details><summary>۲. ورود و امنیت پنل</summary><div class="gb">
+   <ul>
+    <li>آدرس پنل: <code>https://دامنه-شما/مسیر-مخفی</code> که مسیر مخفی همان متغیر <code>ADMIN_PATH</code> است (حداقل ۸ کاراکتر؛ حرف، عدد، خط تیره و زیرخط). صفحهٔ اصلی دامنه یک صفحهٔ وبلاگ معمولی است و هر آدرس ناشناس همان «۴۰۴» معمولی را نشان می‌دهد.</li>
+    <li>پنج بار رمز اشتباه از یک آی‌پی، همان آی‌پی را ده دقیقه مسدود می‌کند. اگر از چند آی‌پی تلاش زیاد شود، سرعت پاسخ ورود پایین می‌آید.</li>
+    <li>رمز ادمین و <code>SESSION_SECRET</code> را بلند و تصادفی بگذارید و هیچ‌وقت در چت یا اسکرین‌شات نفرستید. اگر جایی فاش شد، مقدارشان را در متغیرهای محیطی عوض و سرویس را دوباره دپلوی کنید؛ همهٔ نشست‌ها بسته می‌شود.</li>
+    <li>لاگ دسترسی هسته به‌طور پیش‌فرض خاموش است تا مقصد اتصال کاربران ثبت نشود. با <code>CORE_ACCESS_LOG=1</code> روشن می‌شود.</li>
+    <li>کاربران نمی‌توانند از راه اتصال به خود پنل یا شبکهٔ داخلی ریلوی برسند؛ آی‌پی‌های خصوصی برایشان مسدود است.</li>
+   </ul>
+  </div></details>
+
+  <details><summary>۳. نمای کلی</summary><div class="gb">
+   <p>کاشی‌ها تعداد کاربران، کاربران فعال، مجموع دانلود و آپلود و جمع کل را نشان می‌دهند. نمودار مصرف ۱۴ روز اخیر به وقت UTC است. مصرف هر ۳۰ ثانیه از هسته خوانده و ذخیره می‌شود، بنابراین عددها لحظه‌ای نیستند.</p>
+  </div></details>
+
+  <details><summary>۴. نقاط اتصال</summary><div class="gb">
+   <p>نقطه اتصال یعنی یک «در ورودی» با نوع مشخص. هر کاربر به یک نقطه اتصال تعلق دارد و لینک‌هایش از روی نوع آن ساخته می‌شود. از هر نوع فقط یکی می‌شود ساخت.</p>
+   <table><tr><th>نوع</th><th>چطور کار می‌کند</th><th>چه زمانی</th></tr>
+    <tr><td>xhttp روی دامنه</td><td>ترافیک از پورت ۴۴۳ دامنه (پشت Cloudflare) با TLS می‌آید؛ مسیر مخفی <code>/s/…/</code></td><td>انتخاب پیشنهادی و پایدارترین حالت برای بیشتر کاربران</td></tr>
+    <tr><td>WebSocket + TLS روی دامنه</td><td>همان مسیر دامنه ولی با WebSocket؛ مسیر مخفی <code>/w/…</code></td><td>وقتی کلاینت xhttp را پشتیبانی نمی‌کند</td></tr>
+    <tr><td>حالت مستقیم A</td><td>Reality + Vision روی TCP، بدون Cloudflare؛ نیاز به پورت TCP عمومی (بخش ۹)</td><td>وقتی مسیر دامنه جواب نمی‌دهد و شبکه‌ی شما اجازه می‌دهد</td></tr>
+    <tr><td>حالت مستقیم B</td><td>Reality + xhttp روی همان پورت TCP</td><td>مثل A ولی با انتقال xhttp</td></tr>
+   </table>
+   <p>از دو حالت مستقیم هم‌زمان فقط یکی را می‌توان داشت، چون هر دو یک پورت می‌گیرند.</p>
+   <h4>حالت انتقال xhttp (packet-up / stream-up / stream-one)</h4>
+   <p>این گزینه فقط برای «xhttp روی دامنه» و «حالت مستقیم B» معنی دارد و برای WebSocket و حالت مستقیم A نمایش داده نمی‌شود. با Cloudflare بهتر است <code>packet-up</code> بماند. بدون CDN هر سه قابل استفاده‌اند و اگر مطمئن نیستید باز هم packet-up امن‌ترین انتخاب است. حالت را بعداً از «ویرایش» می‌توان عوض کرد.</p>
+   <h4>ویرایش، تغییر مسیر مخفی و حذف</h4>
+   <ul>
+    <li><b>ویرایش:</b> نام و (برای انواع xhttp) حالت انتقال. تغییر نام بدون ری‌استارت است. تغییر حالت لینک‌ها را عوض می‌کند و هسته چند ثانیه ری‌استارت می‌شود؛ کاربران باید اشتراک را در برنامه به‌روز کنند. نوع، کلیدها و مسیر از اینجا تغییر نمی‌کنند.</li>
+    <li><b>تغییر مسیر مخفی:</b> مسیر جدید می‌سازد (و در حالت مستقیم کلید کوتاه Reality را هم عوض می‌کند). برای وقتی که مسیر لو رفته یا مسدود شده؛ لینک‌های قبلی از کار می‌افتند.</li>
+    <li><b>حذف:</b> نقطه اتصال و همهٔ کاربرانش حذف می‌شوند.</li>
+   </ul>
+  </div></details>
+
+  <details><summary>۵. کاربران</summary><div class="gb">
+   <h4>ساخت کاربر</h4>
+   <ul>
+    <li><b>حجم (GB):</b> ۰ یعنی نامحدود. <b>مدت (روز):</b> ۰ یعنی بی‌انقضا و از لحظهٔ ساخت شمرده می‌شود.</li>
+    <li><b>سرعت دانلود / آپلود (Mbps):</b> ۰ یعنی نامحدود. برای کاربر دارای سقف سرعت، ترافیک UDP غیر از DNS (مثل QUIC) مسدود می‌شود تا برنامه‌ها به TCP برگردند و سقف سرعت واقعاً اعمال شود.</li>
+   </ul>
+   <h4>دکمه‌های هر کاربر</h4>
+   <ul>
+    <li><b>لینک:</b> صفحهٔ اشتراک کاربر را در تب جدید باز می‌کند.</li>
+    <li><b>کپی اشتراک:</b> آدرس اشتراک را کپی می‌کند تا برای کاربر بفرستید.</li>
+    <li><b>ویرایش:</b> نام، حجم، تاریخ انقضا و سرعت. مصرف فعلی و لینک کاربر دست‌نخورده می‌مانند. تاریخ انقضا را خالی بگذارید تا بی‌انقضا شود. هسته فقط وقتی ری‌استارت می‌شود که فعال بودن یا سرعت کاربر عوض شده باشد.</li>
+    <li><b>توقف / فعال‌سازی:</b> کاربر را موقتاً قطع یا وصل می‌کند.</li>
+    <li><b>تمدید:</b> حجم و مدت جدید می‌دهد، مصرف را صفر و کاربر را فعال می‌کند.</li>
+    <li><b>ریست:</b> فقط مصرف را صفر می‌کند.</li>
+    <li><b>حذف:</b> کاربر حذف می‌شود و لینکش از کار می‌افتد.</li>
+   </ul>
+   <h4>چه زمانی کاربر غیرفعال می‌شود؟</h4>
+   <p>وقتی متوقف شده باشد، تاریخ انقضایش گذشته باشد یا حجمش تمام شود. چون مصرف هر ۳۰ ثانیه خوانده می‌شود، ممکن است کاربر کمی بیشتر از سقف حجم مصرف کند.</p>
+  </div></details>
+
+  <details><summary>۶. صفحهٔ اشتراک و استفاده در برنامهٔ کلاینت</summary><div class="gb">
+   <p>آدرس اشتراک شکل <code>https://دامنه/sub/توکن</code> دارد. در مرورگر یک صفحهٔ زیبا با وضعیت، مصرف، QR و لینک‌ها نشان می‌دهد و در برنامه‌های کلاینت فهرست کانفیگ‌ها را همراه اطلاعات حجم و انقضا تحویل می‌دهد.</p>
+   <h4>سه راه افزودن به برنامه</h4>
+   <ol>
+    <li><b>آدرس اشتراک (بهترین):</b> «کپی اشتراک» را بزنید و در برنامه در بخش افزودن اشتراک (Subscription) بچسبانید. بعد از هر تغییر در پنل، کافی است اشتراک را در برنامه «به‌روزرسانی» کنید.</li>
+    <li><b>QR:</b> کد QR صفحهٔ اشتراک را با برنامه اسکن کنید.</li>
+    <li><b>لینک تکی:</b> اگر برنامه اشتراک را قبول نکرد، هر کانفیگ را با دکمهٔ «کپی» در صفحهٔ اشتراک جدا کپی و وارد کنید.</li>
+   </ol>
+   <h4>کانفیگ کامل JSON</h4>
+   <p>برای نقاط اتصال وب، پایین صفحهٔ اشتراک بخش «کانفیگ کامل JSON» هست. دکمهٔ «کپی کد JSON» کل کد را کپی می‌کند؛ لازم نیست دستی انتخاب کنید. آن را در برنامه‌ای که کانفیگ کامل می‌پذیرد (افزودن کانفیگ سفارشی یا چسباندن از کلیپ‌بورد) جای‌گذاری کنید. این کانفیگ Fragment (بخش ۸) را دارد و پورت‌های محلی SOCKS روی ۱۰۸۰۸ و HTTP روی ۱۰۸۰۹ باز می‌کند. اگر چند دامنه یا آدرس تعریف کرده باشید، برای هر کدام یک کانفیگ جدا هست.</p>
+  </div></details>
+
+  <details><summary>۷. تنظیمات: هر گزینه روی چه چیزی اثر دارد</summary><div class="gb">
+   <p>این جدول مشخص می‌کند هر تنظیم روی لینک‌های اشتراک (vless://)، کانفیگ JSON یا خود سرور اثر دارد.</p>
+   <table><tr><th>تنظیم</th><th>اعمال روی</th><th>بعد از تغییر</th></tr>
+    <tr><td>دامنه‌ها</td><td>لینک و JSON همهٔ نقاط وب. در حالت مستقیم فقط وقتی دامنهٔ TCP تعیین نشده باشد</td><td>کاربران اشتراک را به‌روز کنند</td></tr>
+    <tr><td>آدرس‌های اتصال (IP تمیز)</td><td>لینک و JSON نقاط وب؛ برای هر آدرس یک کانفیگ ساخته می‌شود</td><td>به‌روزرسانی اشتراک</td></tr>
+    <tr><td>اثرانگشت TLS (fp)</td><td>لینک و JSON، هم وب هم مستقیم</td><td>به‌روزرسانی اشتراک</td></tr>
+    <tr><td>ALPN برای xhttp</td><td>لینک و JSON فقط xhttp روی دامنه</td><td>به‌روزرسانی اشتراک</td></tr>
+    <tr><td>ALPN برای WebSocket</td><td>لینک و JSON فقط WebSocket</td><td>به‌روزرسانی اشتراک</td></tr>
+    <tr><td>طول padding</td><td>سرور + لینک + JSON، فقط xhttp روی دامنه</td><td>ری‌استارت هسته و به‌روزرسانی اشتراک</td></tr>
+    <tr><td>Fragment</td><td><b>فقط کانفیگ JSON</b> نقاط وب (xhttp و WebSocket). روی لینک‌ها و حالت مستقیم اثری ندارد</td><td>JSON را دوباره کپی کنند</td></tr>
+    <tr><td>مبهم‌سازی padding</td><td>سرور + لینک + JSON، فقط xhttp روی دامنه</td><td>ری‌استارت هسته و به‌روزرسانی اشتراک</td></tr>
+    <tr><td>VLESS Encryption</td><td>سرور + لینک + JSON برای xhttp و WebSocket روی دامنه. حالت‌های مستقیم را شامل نمی‌شود</td><td>ری‌استارت هسته و به‌روزرسانی اشتراک</td></tr>
+   </table>
+   <div class="warn">بخش «ضد شناسایی (پیشرفته)» مخصوص کانفیگ JSON نیست و روی لینک‌ها هم اثر می‌گذارد، چون سرور و کلاینت باید یکسان باشند. فقط Fragment مخصوص JSON است. بعد از تغییر گزینه‌های سمت سرور، کلاینت‌های قدیمی وصل نمی‌شوند تا اشتراک را به‌روز کنند.</div>
+   <h4>بخش «مقصد Reality»</h4>
+   <p>وقتی یکی از حالت‌های مستقیم ساخته شده باشد، پنل بررسی می‌کند مقصد (<code>FRONT_HOST</code>) هم TLS 1.3 و هم HTTP/2 دارد. اگر یکی ✗ بود، سایت دیگری را در <code>FRONT_HOST</code> بگذارید.</p>
+  </div></details>
+
+  <details><summary>۸. کانفیگ JSON و Fragment</summary><div class="gb">
+   <p>Fragment پیام اول TLS (ClientHello) را به چند تکهٔ کوچک می‌شکند تا دستگاه‌های فیلترینگ که فقط نام دامنه (SNI) را در یک بسته جست‌وجو می‌کنند، آن را نبینند. این کار سمت کلاینت و روی ارتباط بین دستگاه شما و Cloudflare انجام می‌شود.</p>
+   <ul>
+    <li><b>طول هر تکه:</b> پیش‌فرض ۱۰۰ تا ۲۰۰ بایت. <b>فاصله بین تکه‌ها:</b> پیش‌فرض ۱۰ تا ۲۰ میلی‌ثانیه. <b>تعداد تکه‌ها:</b> پیش‌فرض ۳ تا ۶ و با متغیر <code>FRAG_MAX_SPLIT</code> قابل تغییر است.</li>
+    <li>اگر اتصال کند یا ناپایدار شد، فاصله را کمتر کنید یا Fragment را خاموش کنید.</li>
+    <li>کلاینت باید نسخهٔ جدیدی باشد که قالب کانفیگ جدید (finalmask) را می‌فهمد؛ در نسخه‌های قدیمی‌تر JSON بدون Fragment لازم است.</li>
+    <li>Fragment فقط در «کانفیگ کامل JSON» هست. لینک‌های vless:// آن را ندارند، چون این قابلیت داخل خود لینک نمی‌گنجد.</li>
+   </ul>
+   <h4>مسیریابی در کانفیگ JSON</h4>
+   <p>فقط آی‌پی‌های محلی و خصوصی مستقیم می‌روند و بقیه از اتصال اصلی عبور می‌کنند. دامنه‌ها روی دستگاه شما resolve نمی‌شوند؛ این مهم است چون بعضی اینترنت‌ها برای دامنه‌های مسدود یک آدرس خصوصی جعلی برمی‌گردانند و بدون این تنظیم آن دامنه‌ها مستقیم می‌رفتند.</p>
+  </div></details>
+
+  <details><summary>۹. حالت مستقیم (اتصال TCP عمومی)</summary><div class="gb">
+   <p>حالت‌های مستقیم A و B بدون Cloudflare و روی یک پورت TCP عمومی کار می‌کنند. اگر دامنه‌ی ریلوی یا مسیر دامنه از شبکه‌ی شما جواب نمی‌دهد، ممکن است این راه جواب بدهد؛ البته بعضی اینترنت‌ها خود این آی‌پی یا پورت را هم می‌بندند.</p>
+   <ol>
+    <li>سرویس را دپلوی کنید و یک نقطه اتصال مستقیم به‌همراه حداقل یک کاربر بسازید. بدون کاربر هسته روی پورت مستقیم گوش نمی‌دهد.</li>
+    <li>در ریلوی: Settings ← Networking، گزینهٔ TCP را اضافه کنید و پورت مقصد را <code>4433</code> (مقدار <code>EDGE_PORT</code>) بدهید. ریلوی یک دامنه و یک پورت عمومی تصادفی می‌دهد.</li>
+    <li>این متغیرها را در سرویس بگذارید: <code>EDGE_DOMAIN</code> (دامنه بدون پورت)، <code>EDGE_PUBLIC_PORT</code> (پورت عمومی) و در صورت نیاز <code>FRONT_HOST</code>. بعد از ذخیره سرویس دوباره دپلوی می‌شود.</li>
+    <li>اختیاری: یک زیردامنهٔ جدا با رکورد CNAME به دامنهٔ ریلوی بسازید و در Cloudflare حتماً روی «DNS only» (ابر خاکستری) بگذارید. نام را در <code>EDGE_DOMAIN</code> بنویسید. از دامنه‌ای که پشت ابر نارنجی است نمی‌شود استفاده کرد.</li>
+    <li>اشتراک کاربر را دوباره بگیرید و با کلاینت امتحان کنید.</li>
+   </ol>
+   <div class="tip">پینگ به این آدرس همیشه timeout می‌دهد و چیزی را ثابت نمی‌کند. برای تست در ویندوز از <code>Test-NetConnection نام-دامنه -Port پورت-عمومی</code> استفاده کنید و ببینید <code>TcpTestSucceeded</code> برابر True هست یا نه. اگر پورت مقصد در ریلوی را عوض کردید، <code>EDGE_PORT</code> را هم همان عدد بگذارید و اگر پورت عمومی عوض شد، <code>EDGE_PUBLIC_PORT</code> را به‌روز کنید.</div>
+  </div></details>
+
+  <details><summary>۱۰. متغیرهای محیطی</summary><div class="gb">
+   <table><tr><th>نام</th><th>توضیح</th></tr>
+    <tr><td><code>ADMIN_USER</code> / <code>ADMIN_PASS</code></td><td>نام کاربری و رمز ورود به پنل (الزامی)</td></tr>
+    <tr><td><code>ADMIN_PATH</code></td><td>مسیر مخفی پنل؛ حداقل ۸ کاراکتر (الزامی)</td></tr>
+    <tr><td><code>SESSION_SECRET</code></td><td>رشتهٔ تصادفی بلند برای امضای نشست (الزامی). مثال ساخت: <code>python -c "import secrets; print(secrets.token_hex(32))"</code></td></tr>
+    <tr><td><code>CORE_URL</code></td><td>آدرس دانلود مستقیم فایل zip هسته؛ باید به‌صورت متغیر زمان ساخت (Build variable) گذاشته شود</td></tr>
+    <tr><td><code>PANEL_DOMAIN</code></td><td>دامنهٔ پیش‌فرض لینک‌ها؛ از تنظیمات داشبورد قابل تغییر است و آنجا اولویت دارد</td></tr>
+    <tr><td><code>CLIENT_ADDRESS</code></td><td>آدرس‌های پیش‌فرض اتصال (IP تمیز Cloudflare)، با کاما</td></tr>
+    <tr><td><code>CLIENT_FP</code>، <code>CLIENT_ALPN</code>، <code>CLIENT_ALPN_WS</code></td><td>مقدار پیش‌فرض اثرانگشت و ALPN (قابل تغییر در تنظیمات)</td></tr>
+    <tr><td><code>FRONT_HOST</code></td><td>مقصد Reality به شکل host:port؛ پیش‌فرض <code>www.cloudflare.com:443</code>. فقط خود آدرس را بنویسید، بدون لینک و علامت‌های اضافه</td></tr>
+    <tr><td><code>EDGE_PORT</code></td><td>پورت داخلی حالت مستقیم؛ پیش‌فرض ۴۴۳۳</td></tr>
+    <tr><td><code>EDGE_DOMAIN</code> / <code>EDGE_PUBLIC_PORT</code></td><td>دامنه و پورت عمومی حالت مستقیم (نام‌های قدیمی‌تر این دو متغیر هم هنوز کار می‌کنند)</td></tr>
+    <tr><td><code>FRAG_MAX_SPLIT</code></td><td>تعداد تکه‌های Fragment، پیش‌فرض <code>3-6</code></td></tr>
+    <tr><td><code>XHTTP_EXTRA</code></td><td>JSON خام اختیاری که به تنظیمات اضافی xhttp اضافه می‌شود (پیشرفته)</td></tr>
+    <tr><td><code>CORE_LOG</code> / <code>CORE_ACCESS_LOG</code></td><td>سطح لاگ هسته (پیش‌فرض warning) و فعال‌کردن لاگ دسترسی (با ۱)</td></tr>
+    <tr><td><code>DB_PATH</code></td><td>مسیر دیتابیس؛ پیش‌فرض <code>/data/panel.db</code>. حتماً یک Volume روی <code>/data</code> وصل کنید وگرنه با هر دپلوی داده‌ها پاک می‌شود</td></tr>
+    <tr><td><code>LIMIT_PORT_BASE</code></td><td>پورت پایهٔ رله‌های محدودکنندهٔ سرعت؛ پیش‌فرض ۲۰۰۰۰</td></tr>
+    <tr><td><code>PORT</code></td><td>پورت HTTP عمومی که ریلوی خودش تعیین می‌کند</td></tr>
+   </table>
+  </div></details>
+
+  <details><summary>۱۱. عیب‌یابی</summary><div class="gb">
+   <ul>
+    <li><b>کاربر وصل نمی‌شود:</b> مطمئن شوید کاربر «فعال» است، دامنه‌های بخش تنظیمات ✓ دارند و کاربر بعد از هر تغییر سمت سرور اشتراک را به‌روز کرده است.</li>
+    <li><b>بعد از تغییر دامنه، لینک‌ها خراب شد:</b> دامنهٔ قدیمی را از تنظیمات هم حذف کنید. اگر نامی در DNS پیدا نشود، هشدار قرمز می‌بینید.</li>
+    <li><b>کانفیگ JSON با Fragment وصل نمی‌شود:</b> Fragment را در تنظیمات خاموش کنید و دوباره JSON را کپی کنید. اگر بدون Fragment وصل شد، کلاینت شما قالب جدید را نمی‌فهمد یا مقدارها را باید تغییر دهید.</li>
+    <li><b>بعضی دامنه‌های مسدود بدون عبور از اتصال باز می‌شوند:</b> معمولاً DNS اینترنت شما آدرس خصوصی جعلی می‌دهد. از کانفیگ JSON فعلی پنل استفاده کنید و در برنامهٔ کلاینت، DNS را روی یک DNS رمزنگاری‌شده (DoH) بگذارید.</li>
+    <li><b>پیام «aborting with incomplete response» در لاگ:</b> وقتی کلاینت وسط یک اتصال xhttp قطع می‌کند ثبت می‌شود و خطا نیست.</li>
+    <li><b>حالت مستقیم وصل نمی‌شود:</b> پورت مقصد در ریلوی را با <code>EDGE_PORT</code> مقایسه کنید، مطمئن شوید کاربر روی نقطهٔ مستقیم هست و تست TCP را از یک اینترنت دیگر (مثلاً موبایل) هم امتحان کنید.</li>
+    <li><b>داده‌ها بعد از دپلوی پاک شد:</b> Volume به <code>/data</code> وصل نیست.</li>
+   </ul>
+  </div></details>
+
+  <details><summary>۱۲. به‌روزرسانی و نگهداری</summary><div class="gb">
+   <ul>
+    <li>برای به‌روزرسانی پنل، فایل‌های جدید را جایگزین کنید و دوباره دپلوی کنید. ستون‌های جدید دیتابیس خودکار اضافه می‌شوند و کاربران و تنظیمات پاک نمی‌شوند.</li>
+    <li>برای به‌روز کردن نسخهٔ هسته، دپلوی را بدون کش دوباره بسازید تا آخرین نسخه از <code>CORE_URL</code> دانلود شود.</li>
+    <li>از Volume دیتابیس به‌صورت دوره‌ای نسخهٔ پشتیبان بگیرید.</li>
+    <li>اگر مسیر یا کلید یک نقطه اتصال لو رفت، «تغییر مسیر مخفی» را بزنید.</li>
+   </ul>
+  </div></details>
  </section>
 </main>
 
@@ -112,17 +278,28 @@
  <label for="ep-kind">نوع</label><select id="ep-kind">
   <option value="web-http">xhttp روی دامنه (پیشنهادی)</option>
   <option value="web-ws">WebSocket + TLS روی دامنه</option>
-  <option value="edge-tcp">حالت مستقیم A (نیاز به TCP Proxy)</option>
-  <option value="edge-http">حالت مستقیم B (نیاز به TCP Proxy)</option></select>
- <label for="ep-mode">حالت xhttp</label><select id="ep-mode"><option>packet-up</option><option>stream-up</option><option>stream-one</option></select>
- <p class="hint">با Cloudflare بهتر است packet-up بماند.</p>
+  <option value="edge-tcp">حالت مستقیم A (نیاز به پورت TCP عمومی)</option>
+  <option value="edge-http">حالت مستقیم B (نیاز به پورت TCP عمومی)</option></select>
+ <div id="ep-modebox"><label for="ep-mode">حالت انتقال xhttp</label><select id="ep-mode"><option>packet-up</option><option>stream-up</option><option>stream-one</option></select>
+ <p class="hint" id="ep-modehint"></p></div>
  <div class="dlg-actions"><button class="ghost" onclick="this.closest('dialog').close()">انصراف</button><button onclick="addEndpoint()">افزودن</button></div></dialog>
 
-<dialog id="dlg-limit"><h2>سرعت کاربر</h2><p class="sub" id="lim-who"></p>
- <div class="grid2"><div><label for="l-down">دانلود (Mbps)</label><input id="l-down" type="number" min="0" step="any"></div>
-  <div><label for="l-up">آپلود (Mbps)</label><input id="l-up" type="number" min="0" step="any"></div></div>
- <p class="hint">۰ یعنی نامحدود. با تغییر، هسته چند ثانیه ری‌استارت می‌شود.</p>
- <div class="dlg-actions"><button class="ghost" onclick="this.closest('dialog').close()">انصراف</button><button onclick="saveLimit()">ذخیره</button></div></dialog>
+<dialog id="dlg-uedit"><h2>ویرایش کاربر</h2><p class="sub" id="ue-who"></p>
+ <label for="ue-name">نام</label><input id="ue-name" maxlength="64">
+ <div class="grid2">
+  <div><label for="ue-gb">حجم (GB)</label><input id="ue-gb" type="number" min="0" step="any" placeholder="۰ = نامحدود"></div>
+  <div><label for="ue-exp">تاریخ انقضا</label><input id="ue-exp" type="date" class="ltr"></div>
+  <div><label for="ue-down">سرعت دانلود (Mbps)</label><input id="ue-down" type="number" min="0" step="any" placeholder="۰ = نامحدود"></div>
+  <div><label for="ue-up">سرعت آپلود (Mbps)</label><input id="ue-up" type="number" min="0" step="any" placeholder="۰ = نامحدود"></div></div>
+ <p class="hint" id="ue-hint"></p>
+ <div class="dlg-actions"><button class="ghost" onclick="this.closest('dialog').close()">انصراف</button><button onclick="saveUserEdit()">ذخیره</button></div></dialog>
+
+<dialog id="dlg-epedit"><h2>ویرایش نقطه اتصال</h2><p class="sub" id="ee-kind"></p>
+ <label for="ee-name">نام</label><input id="ee-name" maxlength="64">
+ <div id="ee-modebox"><label for="ee-mode">حالت انتقال xhttp</label><select id="ee-mode"><option>packet-up</option><option>stream-up</option><option>stream-one</option></select>
+ <p class="hint">با تغییر حالت، لینک‌ها عوض می‌شوند و کاربران باید اشتراک را به‌روز کنند.</p></div>
+ <p class="hint">نوع و کلیدها قابل تغییر نیستند. برای مسیر مخفی جدید از «تغییر مسیر مخفی» استفاده کنید.</p>
+ <div class="dlg-actions"><button class="ghost" onclick="this.closest('dialog').close()">انصراف</button><button onclick="saveEpEdit()">ذخیره</button></div></dialog>
 
 <dialog id="dlg-renew"><h2>تمدید کاربر</h2><p class="sub" id="rn-who"></p>
  <div class="grid2"><div><label for="r-gb">حجم جدید (GB)</label><input id="r-gb" type="number" min="0" step="any"></div>
@@ -151,6 +328,12 @@ const mb=k=>k?(k/1000).toFixed(k%1000?2:0):'∞';
 const fmt=b=>{b=+b||0;const u=['B','KB','MB','GB','TB'];let i=0;while(b>=1024&&i<4){b/=1024;i++}return '\u2066'+b.toFixed(i?2:0)+' '+u[i]+'\u2069'};
 const ico=n=>`<svg class="i"><use href="#i-${n}"/></svg>`;
 const KIND={'web-http':'xhttp','web-ws':'WebSocket','edge-tcp':'مستقیم A','edge-http':'مستقیم B'};
+const XK=['web-http','edge-http'];   // kinds that have an xhttp transfer mode
+function copyText(txt){
+  if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(txt);
+  return new Promise((ok,no)=>{const t=document.createElement('textarea');t.value=txt;t.style.cssText='position:fixed;top:0;opacity:0';
+    document.body.append(t);t.select();let r=false;try{r=document.execCommand('copy')}catch(e){}t.remove();r?ok():no()});
+}
 
 /* tabs */
 function tab(n){document.querySelectorAll('[id^=tab-]').forEach(e=>e.hidden=e.id!=='tab-'+n);
@@ -176,8 +359,8 @@ async function load(){
   if(st){$('#tiles').innerHTML=[['کاربران',st.accounts,'users'],['فعال',st.active,'check'],['دانلود',fmt(st.down),'down'],['آپلود',fmt(st.up),'up'],['مجموع',fmt(st.up+st.down),'sum']]
     .map(t=>`<div class="tile"><i>${ico(t[2])}</i><div><small>${t[0]}</small><b>${t[1]}</b></div></div>`).join('');chart(st.days)}
   EPS=(await api('/endpoints'))||[];
-  $('#eps').innerHTML=EPS.length?EPS.map(i=>`<div class="ep"><h3>${esc(i.remark)}</h3><dl><dt>نوع</dt><dd>${esc(KIND[i.kind]||i.kind)}</dd><dt>حالت</dt><dd>${esc(i.mode)}</dd><dt>کاربر</dt><dd>${i.accounts}</dd></dl>
-    <div class="toolbar" style="margin:0"><button class="ghost sm" onclick="rotEp(${i.id},'${esc(i.remark)}')">تغییر مسیر مخفی</button>
+  $('#eps').innerHTML=EPS.length?EPS.map(i=>`<div class="ep"><h3>${esc(i.remark)}</h3><dl><dt>نوع</dt><dd>${esc(KIND[i.kind]||i.kind)}</dd>${XK.includes(i.kind)?`<dt>حالت</dt><dd>${esc(i.mode)}</dd>`:''}<dt>کاربر</dt><dd>${i.accounts}</dd></dl>
+    <div class="toolbar" style="margin:0"><button class="sm" onclick="openEpEdit(${i.id})">ویرایش</button><button class="ghost sm" onclick="rotEp(${i.id},'${esc(i.remark)}')">تغییر مسیر مخفی</button>
     <button class="danger sm" onclick="delEp(${i.id},'${esc(i.remark)}')">حذف</button></div></div>`).join(''):'<div class="empty">هنوز نقطه اتصالی نساخته‌اید.</div>';
   $('#c-ep').innerHTML=EPS.map(i=>`<option value="${i.id}">${esc(i.remark)} (${esc(KIND[i.kind]||i.kind)})</option>`).join('');
   CLS=(await api('/accounts'))||[];renderUsers();
@@ -191,10 +374,11 @@ function renderUsers(){
     <td data-l="مصرف"><div>${fmt(c.used)} / ${c.total?fmt(c.total):'∞'}${c.total?`<div class="bar ${k}"><div style="width:${p}%"></div></div>`:''}<div class="mu">↓ ${fmt(c.down)} · ↑ ${fmt(c.up)}</div></div></td>
     <td data-l="سرعت"><span dir="ltr">${mb(c.limit_down)} / ${mb(c.limit_up)} <span class="mu">Mbps</span></span></td><td data-l="انقضا"><span dir="ltr">${esc(c.expiry||'∞')}</span></td>
     <td data-l="وضعیت"><span class="badge ${c.active?'b-ok':'b-er'}">${c.active?'فعال':'غیرفعال'}</span></td>
-    <td class="acts"><button class="sm" onclick="copySub('${esc(c.token)}')">لینک</button>
+    <td class="acts"><button class="sm" title="باز کردن صفحهٔ اشتراک" onclick="openSub('${esc(c.token)}')">لینک</button>
+    <button class="soft sm" title="کپی آدرس اشتراک" onclick="copySub('${esc(c.token)}')">کپی اشتراک</button>
+    <button class="ghost sm" onclick="openUserEdit(${c.id})">ویرایش</button>
     <button class="ghost sm" onclick="tog(${c.id})">${c.enable?'توقف':'فعال‌سازی'}</button>
     <button class="ghost sm" onclick="openRenew(${c.id})">تمدید</button>
-    <button class="ghost sm" onclick="openLimit(${c.id})">سرعت</button>
     <button class="ghost sm" onclick="rst(${c.id})">ریست</button>
     <button class="danger sm" onclick="delAcc(${c.id},'${esc(c.name)}')">حذف</button></td></tr>`}).join('')+'</tbody>'
     :'<tbody><tr><td class="empty">'+(CLS.length?'کاربری پیدا نشد.':'هنوز کاربری نساخته‌اید.')+'</td></tr></tbody>';
@@ -205,7 +389,7 @@ $('#q').oninput=renderUsers;
 function openUser(){if(!EPS.length){toast('اول یک نقطه اتصال بسازید',1);tab('endpoints');return}$('#c-name').value='';$('#dlg-user').showModal()}
 async function addAccount(){const r=await api('/accounts','POST',{endpoint_id:+$('#c-ep').value,name:$('#c-name').value,gb:+$('#c-gb').value||0,days:+$('#c-days').value||0,down_mbps:+$('#c-down').value||0,up_mbps:+$('#c-up').value||0});
   if(r){$('#dlg-user').close();toast('کاربر ساخته شد');load()}}
-async function addEndpoint(){const r=await api('/endpoints','POST',{remark:$('#ep-remark').value,kind:$('#ep-kind').value,mode:$('#ep-mode').value});
+async function addEndpoint(){const r=await api('/endpoints','POST',{remark:$('#ep-remark').value,kind:$('#ep-kind').value,mode:XK.includes($('#ep-kind').value)?$('#ep-mode').value:'packet-up'});
   if(r){$('#dlg-ep').close();toast('نقطه اتصال ساخته شد');load()}}
 function rotEp(id,n){confirmBox('تغییر مسیر مخفی','مسیر (و در حالت مستقیم، کلید کوتاه) «'+n+'» عوض می‌شود. لینک‌های فعلی از کار می‌افتند و همه باید اشتراک را به‌روز کنند.',async()=>{if(await api('/endpoints/'+id+'/rotate','POST')){toast('مسیر جدید ساخته شد');load()}})}
 function delEp(id,n){confirmBox('حذف نقطه اتصال','«'+n+'» و همهٔ کاربرانش حذف می‌شوند.',async()=>{if(await api('/endpoints/'+id,'DELETE')){toast('حذف شد');load()}})}
@@ -213,11 +397,50 @@ async function tog(id){if(await api('/accounts/'+id+'/toggle','POST'))load()}
 function rst(id){confirmBox('ریست مصرف','مصرف این کاربر صفر می‌شود.',async()=>{if(await api('/accounts/'+id+'/reset','POST')){toast('ریست شد');load()}})}
 function delAcc(id,n){confirmBox('حذف کاربر','«'+n+'» حذف می‌شود و لینکش از کار می‌افتد.',async()=>{if(await api('/accounts/'+id,'DELETE')){toast('حذف شد');load()}})}
 let CUR=0;const acc=id=>CLS.find(c=>c.id===id);
-function openLimit(id){CUR=id;const c=acc(id);$('#lim-who').textContent=c.name;$('#l-down').value=c.limit_down?c.limit_down/1000:0;$('#l-up').value=c.limit_up?c.limit_up/1000:0;$('#dlg-limit').showModal()}
-async function saveLimit(){if(await api('/accounts/'+CUR+'/limit','POST',{down_mbps:+$('#l-down').value||0,up_mbps:+$('#l-up').value||0})){$('#dlg-limit').close();toast('ذخیره شد');load()}}
 function openRenew(id){CUR=id;$('#rn-who').textContent=acc(id).name;$('#r-gb').value=0;$('#r-days').value=30;$('#dlg-renew').showModal()}
 async function saveRenew(){if(await api('/accounts/'+CUR+'/renew','POST',{gb:+$('#r-gb').value||0,days:+$('#r-days').value||0})){$('#dlg-renew').close();toast('تمدید شد');load()}}
-function copySub(t){const u=location.origin+'/sub/'+t;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('لینک کپی شد'),()=>prompt('کپی کنید:',u))}
+function openSub(t){window.open('/sub/'+t,'_blank','noopener')}
+function copySub(t){const u=location.origin+'/sub/'+t;copyText(u).then(()=>toast('آدرس اشتراک کپی شد'),()=>prompt('کپی کنید:',u))}
+
+/* edit user */
+let EU=null;
+function openUserEdit(id){
+  CUR=id;const c=acc(id);EU={gb:c.total?+(c.total/1073741824).toFixed(3):0,exp:c.expiry||''};
+  $('#ue-who').textContent=c.endpoint;$('#ue-name').value=c.name;$('#ue-gb').value=EU.gb;$('#ue-exp').value=EU.exp;
+  $('#ue-down').value=c.limit_down?c.limit_down/1000:0;$('#ue-up').value=c.limit_up?c.limit_up/1000:0;
+  $('#ue-hint').textContent='مصرف فعلی: '+fmt(c.used)+'. مصرف و لینک کاربر تغییر نمی‌کند. ۰ یعنی نامحدود؛ تاریخ را خالی بگذارید تا بی‌انقضا شود.';
+  $('#dlg-uedit').showModal();
+}
+async function saveUserEdit(){
+  const name=$('#ue-name').value.trim();if(!name){toast('نام نمی‌تواند خالی باشد',1);return}
+  const b={name,down_mbps:+$('#ue-down').value||0,up_mbps:+$('#ue-up').value||0};
+  const gb=+$('#ue-gb').value||0;if(gb!==EU.gb)b.gb=gb;          // untouched fields are not sent, so the exact stored values stay
+  const ex=$('#ue-exp').value;if(ex!==EU.exp)b.expiry=ex;
+  if(await api('/accounts/'+CUR,'PUT',b)){$('#dlg-uedit').close();toast('ذخیره شد');load()}
+}
+
+/* edit endpoint */
+let EE=null;
+function openEpEdit(id){
+  CUR=id;EE=EPS.find(e=>e.id===id);if(!EE)return;
+  $('#ee-kind').textContent='نوع: '+(KIND[EE.kind]||EE.kind);$('#ee-name').value=EE.remark;
+  $('#ee-modebox').hidden=!XK.includes(EE.kind);$('#ee-mode').value=EE.mode;
+  $('#dlg-epedit').showModal();
+}
+async function saveEpEdit(){
+  const name=$('#ee-name').value.trim();if(!name){toast('نام نمی‌تواند خالی باشد',1);return}
+  const b={remark:name},modeChanged=XK.includes(EE.kind)&&$('#ee-mode').value!==EE.mode;
+  if(modeChanged)b.mode=$('#ee-mode').value;
+  const go=async()=>{if(await api('/endpoints/'+CUR,'PUT',b)){$('#dlg-epedit').close();toast('ذخیره شد');load()}};
+  if(modeChanged)confirmBox('تغییر حالت انتقال','هسته چند ثانیه ری‌استارت می‌شود و لینک‌ها عوض می‌شوند؛ همه باید اشتراک را به‌روز کنند.',go);else go();
+}
+
+/* add endpoint: the transfer mode only exists for xhttp kinds */
+function kindChanged(){
+  const k=$('#ep-kind').value;$('#ep-modebox').hidden=!XK.includes(k);
+  $('#ep-modehint').textContent=k==='web-http'?'با Cloudflare بهتر است packet-up بماند.':'بدون CDN هر سه حالت قابل استفاده‌اند؛ اگر مطمئن نیستید packet-up را نگه دارید.';
+}
+$('#ep-kind').onchange=kindChanged;kindChanged();
 async function logout(){await api('/logout','POST');location=BASE}
 
 /* settings */
