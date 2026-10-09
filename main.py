@@ -31,6 +31,7 @@ TCP_DOMAIN = os.getenv("TCP_PROXY_DOMAIN", "")   # Railway TCP Proxy domain (for
 TCP_PORT = os.getenv("TCP_PROXY_PORT", "")       # Railway TCP Proxy public port
 # Optional raw JSON merged into the xhttp "extra" link parameter (advanced)
 XHTTP_EXTRA = os.getenv("XHTTP_EXTRA", "").strip()
+FRAG_MAX_SPLIT = os.getenv("FRAG_MAX_SPLIT", "3-6").strip()
 FP_OK = ("chrome", "firefox", "safari", "ios", "android", "edge", "360", "qq", "random", "randomized")
 ALPN_OK = ("h2", "http/1.1", "h2,http/1.1")
 HOST_RE = re.compile(r"^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$")
@@ -551,7 +552,7 @@ def ipaddress_ok(h):
 
 # ---------- full client config with TLS fragment ----------
 def client_json(c, st, hosts, idx):
-    """A complete Xray client config. The fragment outbound splits the TLS ClientHello (and with it the SNI)
+    """A complete client config. The fragment mask splits the TLS ClientHello (and with it the SNI)
     into small pieces, which defeats DPI that only matches the server name in a single packet."""
     ib = c.endpoint
     if not ib.kind.startswith("web"):
@@ -582,9 +583,12 @@ def client_json(c, st, hosts, idx):
         "streamSettings": ss,
     }]
     if st["frag"] == "1":
-        ss["sockopt"] = {"dialerProxy": "fragment"}
-        outbounds.append({"tag": "fragment", "protocol": "freedom", "settings": {
-            "fragment": {"packets": "tlshello", "length": st["frag_len"], "interval": st["frag_int"]}}})
+        # split the TLS hello into small pieces right on the outbound socket (no extra chained outbound)
+        ss["sockopt"] = {"dialerProxy": "", "finalmask": {"tcp": [{
+            "type": "fragment",
+            "settings": {"packets": "tlshello", "lengths": [st["frag_len"]],
+                         "delays": [st["frag_int"]], "maxSplit": FRAG_MAX_SPLIT},
+        }]}}
     outbounds += [{"tag": "direct", "protocol": "freedom"}, {"tag": "block", "protocol": "blackhole"}]
     return {
         "log": {"loglevel": "warning"},
