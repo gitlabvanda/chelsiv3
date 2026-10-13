@@ -9,6 +9,9 @@ WEB_PORT = 10000        # internal xhttp, reached through Caddy at /s/*
 WS_PORT = 10001         # internal WebSocket, reached through Caddy at /w/*
 API_PORT = 10085        # internal stats API
 EDGE_PORT = int(os.getenv("EDGE_PORT", "4433"))  # expose via Railway TCP Proxy
+# Address the direct (Reality) inbound binds to. Railway reaches containers over IPv6 too, so "::" (dual-stack) is
+# the safe choice there; set EDGE_LISTEN=0.0.0.0 to go back to IPv4 only.
+EDGE_LISTEN = os.getenv("EDGE_LISTEN", "::")
 FRONT_HOST = os.getenv("FRONT_HOST", "www.cloudflare.com:443")
 LIMITS = "/tmp/limits.json"
 LIM_BASE = int(os.getenv("LIMIT_PORT_BASE", "20000"))   # local relay ports for speed-limited users
@@ -91,7 +94,7 @@ def build_config(db):
             }
             if ib.kind == "edge-http":
                 stream["xhttpSettings"] = {"path": ib.path, "mode": ib.mode}
-            listen, port = "0.0.0.0", EDGE_PORT
+            listen, port = EDGE_LISTEN, EDGE_PORT
         dec = st["venc_dec"] if (st["vlessenc"] == "1" and st["venc_dec"] and ib.kind.startswith("web")) else "none"
         inbounds.append({
             "tag": f"in{ib.id}", "listen": listen, "port": port, "protocol": "vless",
