@@ -718,3 +718,9 @@ def sub(token: str, request: Request, db=Depends(get_db)):
     hdr = f"upload={c.up_bytes or 0}; download={c.down_bytes or 0}; total={c.total_bytes or 0}; expire={exp}"
     body = base64.b64encode("\n".join(links).encode()).decode()
     return PlainTextResponse(body, headers={"subscription-userinfo": hdr})
+
+
+# ---------- MCP (Claude Desktop) ----------
+import sys as _sys
+import mcp_server
+mcp_server.register(app, _sys.modules[__name__])
