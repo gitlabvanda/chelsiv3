@@ -88,7 +88,7 @@ def build_config(db):
                 "network": "tcp" if ib.kind == "edge-tcp" else "xhttp",
                 "security": "reality",
                 "realitySettings": {
-                    "show": False, "dest": FRONT_HOST, "serverNames": [host],
+                    "show": os.getenv("REALITY_SHOW") == "1", "dest": FRONT_HOST, "serverNames": [host],
                     "privateKey": ib.key_a, "shortIds": [ib.tag_id],
                 },
             }
