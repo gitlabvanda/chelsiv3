@@ -194,14 +194,8 @@ async def hardening_headers(request: Request, call_next):
     return resp
 
 
-@app.api_route("/", methods=["GET", "HEAD"])
-def landing(request: Request):
-    return templates.TemplateResponse(request, "landing.html", {})
-
-
-@app.get("/robots.txt")
-def robots():
-    return PlainTextResponse("User-agent: *\nAllow: /\n")
+import blog as _site  # public blog pages (home, archive, about, posts, sitemap, robots, favicon)
+_site.register(app, templates)
 
 
 @app.get(BASE)
