@@ -1,81 +1,107 @@
-"""The public face of the site: a small, believable personal blog (home, archive, about, posts,
-sitemap, robots, favicon). Everything that is not a page of this site or of the panel gets the
-ordinary "page not found"."""
+"""Public face of the site: a small Persian (RTL) company site for a laboratory supplies business
+(home, products, articles, about, contact, sitemap, robots, favicon). Everything that is not a page of
+this site or of the panel gets the ordinary "page not found"."""
 from fastapi import HTTPException, Request
 from fastapi.responses import PlainTextResponse, Response
 
-SITE_NAME = "Northfield Notes"
-TAGLINE = "Short notes on software, writing and the things in between."
+SITE_NAME = "وندا طب"
+TAGLINE = "تأمین مواد و تجهیزات آزمایشگاهی، تحقیقاتی و آموزشی"
+MAIN_SITE = "https://vandateb.ir"
+
+BRANDS = [
+    {"name": "Corning", "text": "تولیدکنندهٔ شناخته‌شده‌ی شیشه‌آلات، ظروف کشت سلول و مواد مصرفی آزمایشگاهی برای کاربردهای پژوهشی و صنعتی."},
+    {"name": "Falcon", "text": "مجموعه‌ای از محصولات پلاستیکی یک‌بار مصرف برای کشت سلول و انتقال مایعات، از فلاسک و پلیت تا لوله‌های سانتریفیوژ."},
+    {"name": "Axygen", "text": "مواد مصرفی مرتبط با زیست‌شناسی مولکولی و انتقال مایعات، از جمله سرسمپلر، میکروتیوب و پلیت‌های PCR."},
+    {"name": "SRS", "text": "ابزار و مواد مصرفی آزمایشگاهی برای کار روزمره‌ی آزمایشگاه‌ها، شامل پیپت‌های مکانیکی و سرسمپلر."},
+]
+
+PRODUCTS = [
+    {"title": "ظروف و پلیت‌های کشت سلول", "text": "فلاسک، پتری‌دیش و پلیت‌های چندخانه (۶، ۱۲، ۲۴ و ۹۶ خانه) با سطح تیمارشده و بدون تیمار برای رده‌های سلولی مختلف."},
+    {"title": "پیپت و سرسمپلر", "text": "میکروپیپت‌های تک‌کاناله و چندکاناله در گسترهٔ حجمی گوناگون، همراه با سرسمپلرهای استاندارد، فیلتردار و کم‌جذب."},
+    {"title": "تجهیزات میکروسکوپی", "text": "میکروسکوپ‌های آموزشی و پژوهشی و ملزومات جانبی مانند لام، لامل و محلول‌های رنگ‌آمیزی."},
+    {"title": "شیشه‌آلات آزمایشگاهی", "text": "بشر، ارلن، بالن حجمی، استوانهٔ مدرج و سایر ظروف شیشه‌ای مقاوم در برابر حرارت و مواد شیمیایی."},
+    {"title": "لوله و میکروتیوب", "text": "لوله‌های سانتریفیوژ، میکروتیوب‌ها و لوله‌های ذخیره‌سازی در اندازه‌ها و جنس‌های مختلف."},
+    {"title": "ملزومات ایمنی آزمایشگاه", "text": "دستکش، عینک، ماسک و سایر تجهیزات حفاظت فردی برای کار ایمن در محیط آزمایشگاه."},
+]
 
 POSTS = [
-    {"slug": "keeping-small-projects-small", "title": "Keeping small projects small", "date": "2026-09-14", "when": "September 2026", "mins": 4,
-     "summary": "A few habits that help side projects survive past the first weekend: write the README first, ship the boring version, and delete more than you add.",
+    {"slug": "choosing-the-right-micropipette", "title": "چگونه میکروپیپت مناسب را انتخاب کنیم", "date": "2026-10-04", "when": "مهر ۱۴۰۵", "mins": 4,
+     "summary": "گسترهٔ حجمی، سازوکار کار و سرسمپلر سازگار؛ سه نکته‌ای که پیش از خرید میکروپیپت باید بررسی کنید.",
      "body": [
-         "Most side projects do not die because they were hard. They die because they quietly grew. A weekend idea picks up a settings page, then a plugin system, then a name change, and by the second Sunday nobody wants to open the folder.",
-         "The habit that helps me most is writing the README before any code. If I cannot explain in four sentences what the thing does and who it is for, I am not ready to build it. The README also becomes a promise I can check the work against.",
-         "The second habit is shipping the boring version first. Hard-coded values, one input format, no configuration. It is almost always enough, and when it is not, the shape of the real need is much clearer than it was on day one.",
-         "The last one is deleting more than I add. Every few weeks I look for a feature I have not touched and remove it. The project gets smaller, the code gets easier to read, and the things that remain are the ones that earned their place.",
+         "میکروپیپت یکی از پرکاربردترین ابزارهای هر آزمایشگاه است و انتخاب نادرست آن می‌تواند دقت کل آزمایش را کاهش دهد. پیش از خرید، مهم‌ترین پرسش این است که بیشتر با چه حجم‌هایی کار می‌کنید.",
+         "هر میکروپیپت در بخشی از گسترهٔ حجمی خود بهترین دقت را دارد. استفاده از پیپتی با ظرفیت بسیار بالاتر برای برداشتن حجم‌های کوچک، خطا را بیشتر می‌کند. بهتر است حجم‌های رایج کار خود را مشخص کنید و پیپتی بخرید که این حجم‌ها در میانهٔ گسترهٔ آن قرار بگیرد.",
+         "بیشتر پیپت‌های رایج بر پایهٔ جابه‌جایی هوا کار می‌کنند. برای مایعات چسبناک، فرار یا پرمخاطره، پیپت‌های جابه‌جایی مثبت گزینهٔ بهتری هستند. همچنین از سازگاری سرسمپلر با پیپت اطمینان حاصل کنید، زیرا نشتی در محل اتصال دقت را به‌شدت پایین می‌آورد.",
+         "در نهایت، سبک بودن، راحتی دست و امکان کالیبراسیون دوره‌ای را در نظر بگیرید. پیپتی که در طول روز کار با آن خسته‌کننده نباشد، خطای انسانی کمتری هم به همراه دارد.",
      ]},
-    {"slug": "notes-on-reading-slowly", "title": "Notes on reading slowly", "date": "2026-08-09", "when": "August 2026", "mins": 3,
-     "summary": "Why a single chapter a day beats a weekend binge, and what changes when you keep a margin notebook next to the book.",
+    {"slug": "cell-culture-vessel-basics", "title": "نکات کلیدی در کار با ظروف کشت سلول", "date": "2026-09-21", "when": "شهریور ۱۴۰۵", "mins": 5,
+     "summary": "از انتخاب سطح مناسب تا رعایت اصول کار استریل؛ چند توصیهٔ عملی برای کشت سلول.",
      "body": [
-         "For years I measured reading by how many books I finished. It made me a faster reader and a worse one. I remembered plots for a week and arguments for about a day.",
-         "These days I read one chapter, close the book, and write three lines in a small notebook: what the chapter claimed, one sentence I liked, and one thing I doubt. It takes five minutes and it changes how I read the next chapter, because I am now reading to answer those questions.",
-         "Slow reading is not a virtue in itself. Some books deserve a fast, greedy afternoon. But for anything I want to still understand in a year, the margin notebook has been the single most useful tool I have added.",
+         "موفقیت در کشت سلول از انتخاب درست ظرف شروع می‌شود. بسیاری از رده‌های سلولی چسبنده برای رشد به سطحی نیاز دارند که با روشی ویژه تیمار شده باشد، در حالی که سلول‌های معلق معمولاً با ظروف بدون تیمار هم سازگارند.",
+         "هنگام کار، ظرف را بیش از اندازهٔ توصیه‌شده پر نکنید. حجم زیاد محیط کشت تبادل گاز را کاهش می‌دهد و احتمال آلودگی هنگام جابه‌جایی را بالا می‌برد. درِ فلاسک‌ها را فقط در محیط استریل باز کنید و هر ظرف را با نام رده، شماره پاساژ و تاریخ برچسب بزنید.",
+         "رطوبت و دمای انکوباتور را به‌طور منظم بررسی کنید. تبخیر محیط در پلیت‌های چندخانه، به‌ویژه در خانه‌های کناری، می‌تواند نتایج را تحت تأثیر بگذارد. استفاده از پوشش مناسب و پر کردن فضای خالی بین خانه‌ها با آب یا بافر مفید است.",
      ]},
-    {"slug": "a-tidy-home-server-revisited", "title": "A tidy home server, revisited", "date": "2026-06-21", "when": "June 2026", "mins": 6,
-     "summary": "Backups, updates and one very small dashboard. Nothing clever, which is the point.",
+    {"slug": "choosing-multiwell-plates", "title": "تفاوت پلیت‌های ۶، ۱۲، ۲۴ و ۹۶ خانه", "date": "2026-09-02", "when": "شهریور ۱۴۰۵", "mins": 4,
+     "summary": "هر پلیت چندخانه برای کاربردی مناسب‌تر است. راهنمای کوتاهی برای انتخاب بر اساس نوع آزمایش.",
      "body": [
-         "I have run some kind of home server for a long time, and the best version of it is always the most boring one. A single small machine, a handful of services, and a routine I can follow when I am tired.",
-         "Backups come first. Anything that matters is copied nightly to a second disk and weekly to somewhere outside the house. Once a quarter I restore one file from each, because a backup that has never been restored is only a hope.",
-         "Updates are scheduled, not heroic. One evening a month I update everything, read what changed, and write one line in a changelog file. If something breaks, the changelog tells me what I touched last.",
-         "The dashboard is a static page that lists what is running and when it last backed up. It has no login, no database and no JavaScript, and it has never once been the thing that went wrong.",
+         "تعداد خانه‌های یک پلیت مستقیماً به سطح هر خانه و حجم قابل استفاده در آن مربوط می‌شود. هر چه تعداد خانه‌ها بیشتر باشد، سطح و حجم هر خانه کوچک‌تر است و در نتیجه برای غربالگری‌های پرتعداد مناسب‌تر خواهد بود.",
+         "پلیت‌های ۶ و ۱۲ خانه معمولاً برای کشت سلول در مقیاس بزرگ‌تر، ترانسفکشن و آزمایش‌هایی که به تعداد سلول بیشتر نیاز دارند به کار می‌روند. پلیت ۲۴ خانه حد واسطی برای آزمایش‌های هم‌کشتی و تیمارهای متعدد است.",
+         "پلیت ۹۶ خانه برای روش‌هایی مانند الایزا، سنجش‌های زنده‌مانی سلولی و غربالگری ترکیبات کاربرد دارد. در این پلیت حجم کاری هر خانه معمولاً در حد چند ده تا چند صد میکرولیتر است. همیشه راهنمای سازنده را برای حجم دقیق توصیه‌شده ببینید.",
      ]},
-    {"slug": "the-case-for-plain-text", "title": "The case for plain text", "date": "2026-04-30", "when": "April 2026", "mins": 5,
-     "summary": "Notes, to-do lists and drafts all end up in one folder of text files. Here is why that keeps working when apps come and go.",
+    {"slug": "basic-lab-safety", "title": "اصول ایمنی پایه در آزمایشگاه", "date": "2026-08-15", "when": "مرداد ۱۴۰۵", "mins": 4,
+     "summary": "پوشش حفاظتی، برچسب‌گذاری و تفکیک پسماند؛ عادت‌های ساده‌ای که از حادثه جلوگیری می‌کنند.",
      "body": [
-         "I have moved my notes between five applications in ten years, and each move cost me an afternoon and a few things that never came across. The folder of plain text files I started with has survived all of them.",
-         "Plain text is easy to search, easy to back up and easy to read on any device. It does not need an account, it does not change its format, and I can open a file from 2016 as easily as one from yesterday.",
-         "The trade-off is that there is no fancy structure. I solved that with a few conventions: one file per topic, the date at the top, and a short list of tags on the second line. It is not elegant, but it is durable, and durable is what I wanted.",
+         "ایمنی در آزمایشگاه به تجهیزات گران‌قیمت وابسته نیست؛ بیشتر به عادت‌های درست بستگی دارد. استفاده از روپوش، دستکش و عینک محافظ باید برای همهٔ افراد در هر آزمایش، حتی کوتاه، یک رفتار ثابت باشد.",
+         "همهٔ محلول‌ها و نمونه‌ها را برچسب‌گذاری کنید و تاریخ تهیه را روی آن‌ها بنویسید. ظرف بی‌نام در آزمایشگاه یک خطر پنهان است. هرگز با دهان پیپت نکنید و خوردن و آشامیدن را در محیط کار ممنوع بدانید.",
+         "پسماند را از ابتدا تفکیک کنید: اجسام تیز، پسماند زیستی، مواد شیمیایی و زباله‌ی عادی هر کدام ظرف مخصوص خود را دارند. محل شیر آب اضطراری، چشم‌شوی و خروجی‌ها را همه‌ی کارکنان باید بدانند.",
      ]},
-    {"slug": "small-tools-for-writing", "title": "Small tools for writing", "date": "2026-03-12", "when": "March 2026", "mins": 4,
-     "summary": "A timer, a word counter and a rule about the first paragraph. The tiny things that make a draft easier to start.",
+    {"slug": "equipment-care-and-calibration", "title": "نگهداری و کالیبراسیون تجهیزات دقیق", "date": "2026-07-26", "when": "تیر ۱۴۰۵", "mins": 5,
+     "summary": "چرا کالیبراسیون دوره‌ای و دفتر ثبت نگهداری، نتایج قابل اعتمادتری می‌سازد.",
      "body": [
-         "I used to wait for the right mood to write, which meant I wrote very little. What changed things was lowering the cost of starting rather than raising the quality of the mood.",
-         "A twenty-five minute timer is the first tool. I do not have to write well, only until it rings. A word counter in the corner is the second, because watching the number grow is more motivating than I would like to admit.",
-         "The third is a rule: the first paragraph is allowed to be bad. I mark it with a line of asterisks and come back to it at the end, when I finally know what the piece is about. Most of the time, I cut it entirely.",
+         "تجهیزات دقیق آزمایشگاهی مانند پیپت، ترازو و میکروسکوپ در طول زمان دچار انحراف می‌شوند. این انحراف معمولاً آرام و ناپیدا است و تا زمانی که نتیجهٔ آزمایش زیر سؤال نرفته، کسی متوجهش نمی‌شود.",
+         "راه‌حل ساده، برنامهٔ کالیبراسیون دوره‌ای است. برای هر دستگاه یک دفتر ثبت نگه دارید و تاریخ کالیبراسیون، نتایج و اقدامات نگهداری را در آن بنویسید. با این کار هم ردیابی مشکل آسان می‌شود و هم در ممیزی‌ها مستندات لازم را دارید.",
+         "نگهداری روزمره هم اهمیت دارد: تمیز نگه داشتن سطوح، دور نگه داشتن دستگاه از رطوبت و گرد و غبار، و استفاده از وسایل جانبی مناسب. رعایت همین نکات ساده عمر تجهیزات را به‌طور محسوسی افزایش می‌دهد.",
      ]},
 ]
 BY_SLUG = {p["slug"]: p for p in POSTS}
 
 ABOUT = [
-    "Northfield Notes is a small personal site where I write about software, reading and the quiet habits that make work easier. It is written in my spare time and updated when I have something worth saying, which is not as often as I would like.",
-    "There are no ads, no newsletter and no tracking here. If you enjoy something, tell a friend. If you spot a mistake, I would be glad to know.",
+    "وندا طب از سال ۱۳۸۸ با هدف تأمین مواد و تجهیزات آزمایشگاهی برای بخش‌های پژوهشی، آموزشی و صنعتی آغاز به کار کرد. ما می‌کوشیم محصولات باکیفیت، مشاوره‌ی درست و تأمین پایدار را در کنار هم به آزمایشگاه‌ها ارائه دهیم.",
+    "مخاطبان ما دانشگاه‌ها، مراکز تحقیقاتی، بیمارستان‌ها و آزمایشگاه‌های صنعتی هستند. در انتخاب برندها، قابلیت اطمینان، دسترسی به قطعات و مواد مصرف و پشتیبانی پس از فروش را در اولویت قرار می‌دهیم.",
+    "این صفحات بخشی از مجموعه‌ی محتوای آموزشی و کاتالوگ وندا طب است. برای اطلاعات کامل محصولات، استعلام قیمت و ارتباط با کارشناسان، به وب‌سایت اصلی مراجعه کنید.",
 ]
 
-FAVICON = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='#374151'/>"
-           "<text x='16' y='22' font-family='Georgia,serif' font-size='18' text-anchor='middle' fill='#fafaf9'>N</text></svg>")
+FAVICON = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='#0b5fd6'/>"
+           "<text x='16' y='23' font-family='sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='#ffffff'>V</text></svg>")
 
 
 def register(app, templates):
     def page(request, view, **ctx):
         return templates.TemplateResponse(request, "site.html", {
-            "view": view, "site_name": SITE_NAME, "tagline": TAGLINE, "posts": POSTS, **ctx})
+            "view": view, "site_name": SITE_NAME, "tagline": TAGLINE, "main_site": MAIN_SITE,
+            "posts": POSTS, "brands": BRANDS, "products": PRODUCTS, **ctx})
 
     @app.api_route("/", methods=["GET", "HEAD"])
     def home(request: Request):
-        return page(request, "home", recent=POSTS[:3], title=SITE_NAME)
+        return page(request, "home", recent=POSTS[:3], title=SITE_NAME + " | " + TAGLINE)
 
-    @app.api_route("/archive", methods=["GET", "HEAD"])
-    def archive(request: Request):
-        return page(request, "archive", title="Archive")
+    @app.api_route("/products", methods=["GET", "HEAD"])
+    def products(request: Request):
+        return page(request, "products", title="محصولات")
+
+    @app.api_route("/articles", methods=["GET", "HEAD"])
+    def articles(request: Request):
+        return page(request, "articles", title="مقالات")
 
     @app.api_route("/about", methods=["GET", "HEAD"])
     def about(request: Request):
-        return page(request, "about", about=ABOUT, title="About")
+        return page(request, "about", about=ABOUT, title="درباره ما")
 
-    @app.api_route("/notes/{slug}", methods=["GET", "HEAD"])
-    def note(request: Request, slug: str):
+    @app.api_route("/contact", methods=["GET", "HEAD"])
+    def contact(request: Request):
+        return page(request, "contact", title="ارتباط با ما")
+
+    @app.api_route("/articles/{slug}", methods=["GET", "HEAD"])
+    def article(request: Request, slug: str):
         p = BY_SLUG.get(slug)
         if not p:
             raise HTTPException(404)
@@ -95,8 +121,9 @@ def register(app, templates):
     @app.get("/sitemap.xml")
     def sitemap(request: Request):
         host = request.headers.get("host", "")
-        urls = [("/", POSTS[0]["date"]), ("/archive", POSTS[0]["date"]), ("/about", POSTS[-1]["date"])]
-        urls += [(f"/notes/{p['slug']}", p["date"]) for p in POSTS]
+        d0, d1 = POSTS[0]["date"], POSTS[-1]["date"]
+        urls = [("/", d0), ("/products", d0), ("/articles", d0), ("/about", d1), ("/contact", d1)]
+        urls += [(f"/articles/{p['slug']}", p["date"]) for p in POSTS]
         body = "".join(f"<url><loc>https://{host}{u}</loc><lastmod>{d}</lastmod></url>" for u, d in urls)
         xml = ('<?xml version="1.0" encoding="UTF-8"?>'
                '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + body + "</urlset>")
